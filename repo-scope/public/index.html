@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="RepoScope — GitHub repository intelligence for engineering teams." />
+  <title>RepoScope — Repository Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script defer src="/assets/app.js"></script>
+</head>
+<body>
+  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+  <header class="nav shell">
+    <a class="brand" href="#top" aria-label="RepoScope home"><span class="brand-mark">R</span><span>Repo<span class="accent">Scope</span></span></a>
+    <nav><a href="#analyzer">Analyzer</a><a href="#compare">Compare</a><a href="#architecture">Architecture</a><a href="/docs">API</a></nav>
+    <span class="status-pill"><i></i> GitHub intelligence</span>
+  </header>
+
+  <main id="top">
+    <section class="hero shell">
+      <div class="eyebrow">REPOSITORY INTELLIGENCE PLATFORM</div>
+      <h1>Understand repository health.<br><span>Before risk becomes visible.</span></h1>
+      <p class="hero-copy">RepoScope turns GitHub activity into explainable health scores, contributor-risk signals, issue trends, engineering alerts and AI-assisted recommendations.</p>
+      <form id="analyze-form" class="search-box" autocomplete="off">
+        <div class="repo-prefix">github.com/</div>
+        <input id="repo-input" name="repo" value="fastapi/fastapi" aria-label="GitHub repository" placeholder="owner/repository" />
+        <button class="primary-btn" type="submit"><span>Analyze repository</span><span aria-hidden="true">→</span></button>
+      </form>
+      <div class="quick-row"><span>Try:</span><button data-repo="facebook/react">facebook/react</button><button data-repo="pallets/flask">pallets/flask</button><button data-repo="vuejs/core">vuejs/core</button></div>
+      <div class="hero-proof"><div><strong>Health</strong><span>0–100 explainable score</span></div><div><strong>Risk</strong><span>Bus factor + alerts</span></div><div><strong>Trends</strong><span>Commits + issues over time</span></div><div><strong>AI</strong><span>Optional LLM analyst</span></div></div>
+    </section>
+
+    <section id="analyzer" class="shell dashboard-section hidden" aria-live="polite">
+      <div id="loading" class="loading-card hidden"><div class="scanner"></div><div><strong>Mapping repository signals…</strong><span>Fetching recent GitHub activity and building the health profile.</span></div></div>
+      <div id="error-box" class="error-box hidden"></div>
+      <div id="dashboard" class="hidden">
+        <div class="section-head"><div><div class="eyebrow">LIVE ANALYSIS</div><h2 id="repo-title">Repository</h2><p id="repo-description"></p></div><div class="section-actions"><button id="refresh-btn" class="ghost-btn">Refresh data</button><a id="github-link" class="ghost-btn" href="#" target="_blank" rel="noreferrer">Open GitHub ↗</a></div></div>
+
+        <div class="overview-grid">
+          <article class="panel health-panel"><div class="panel-label">Repository health</div><div class="score-ring" id="score-ring"><div><strong id="health-score">—</strong><small>/100</small></div></div><div id="health-label" class="health-label">—</div><p>Composite signal from activity, ownership resilience, issue/PR hygiene and engineering practices.</p></article>
+          <article class="panel metric-panel"><div class="metric-icon cyan">↗</div><span>Commits / 90d</span><strong id="commits-90">—</strong><small id="last-commit">Recent sample</small></article>
+          <article class="panel metric-panel"><div class="metric-icon violet">◎</div><span>Bus factor</span><strong id="bus-factor">—</strong><small>Contributors covering 50% of sampled contributions</small></article>
+          <article class="panel metric-panel"><div class="metric-icon green">✓</div><span>Issue closure</span><strong id="issue-closure">—</strong><small id="issue-sample">Sampled issue hygiene</small></article>
+          <article class="panel metric-panel"><div class="metric-icon amber">⑂</div><span>PR merge rate</span><strong id="pr-merge">—</strong><small id="pr-sample">Closed pull-request sample</small></article>
+        </div>
+
+        <div class="dashboard-grid two-col">
+          <article class="panel chart-panel"><div class="panel-head"><div><div class="panel-label">ACTIVITY TREND</div><h3>Commit velocity</h3></div><span class="mini-tag">recent sample</span></div><div class="chart-wrap"><canvas id="commits-chart"></canvas></div></article>
+          <article class="panel chart-panel"><div class="panel-head"><div><div class="panel-label">ISSUE FLOW</div><h3>Opened vs closed</h3></div><span class="mini-tag">monthly</span></div><div class="chart-wrap"><canvas id="issues-chart"></canvas></div></article>
+        </div>
+
+        <div class="dashboard-grid split-strong">
+          <article class="panel"><div class="panel-head"><div><div class="panel-label">SMART DIAGNOSIS</div><h3>Engineering summary</h3></div><div class="spark">✦</div></div><p id="smart-summary" class="summary-copy"></p><div id="signals" class="signal-grid"></div><button id="ai-btn" class="ai-btn"><span>✦</span> Run AI analyst</button><div id="ai-result" class="ai-result hidden"></div></article>
+          <article class="panel"><div class="panel-head"><div><div class="panel-label">AUTOMATED ALERTS</div><h3>Risk radar</h3></div><span id="alert-count" class="mini-tag">0 alerts</span></div><div id="alerts" class="alerts"></div></article>
+        </div>
+
+        <div class="dashboard-grid two-col">
+          <article class="panel"><div class="panel-head"><div><div class="panel-label">CONTRIBUTOR STRUCTURE</div><h3>Top contributors</h3></div></div><div class="chart-wrap short"><canvas id="contributors-chart"></canvas></div></article>
+          <article class="panel"><div class="panel-head"><div><div class="panel-label">TECH STACK</div><h3>Language distribution</h3></div></div><div class="language-layout"><div class="chart-wrap donut"><canvas id="languages-chart"></canvas></div><div id="language-list" class="language-list"></div></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="compare" class="shell compare-section">
+      <div class="section-head compact"><div><div class="eyebrow">REPOSITORY COMPARISON</div><h2>Benchmark two codebases.</h2><p>Compare health, activity, contribution resilience and maintenance signals side by side.</p></div></div>
+      <form id="compare-form" class="compare-form"><input id="repo-a" value="fastapi/fastapi" placeholder="owner/repo A"><span>vs</span><input id="repo-b" value="pallets/flask" placeholder="owner/repo B"><button class="primary-btn" type="submit">Compare</button></form>
+      <div id="compare-loading" class="mini-loading hidden">Building comparison…</div><div id="compare-result" class="compare-result hidden"></div>
+    </section>
+
+    <section id="architecture" class="shell architecture-section">
+      <div class="eyebrow">HOW IT WORKS</div><h2>One pipeline, four engineering layers.</h2>
+      <div class="architecture-grid">
+        <article><span>01</span><strong>GitHub ingestion</strong><p>REST API, pagination, authentication, rate-limit handling and a TTL cache.</p></article>
+        <article><span>02</span><strong>Analytics engine</strong><p>Activity, issue/PR hygiene, contributor concentration, health score and alerts.</p></article>
+        <article><span>03</span><strong>AI & training path</strong><p>LLM insight endpoint today; supervised risk-model training pipeline ready for labelled snapshots.</p></article>
+        <article><span>04</span><strong>Cloud delivery</strong><p>FastAPI + Docker, Vercel-ready entrypoint and CI for reliable deployment.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell footer"><div class="brand"><span class="brand-mark">R</span><span>Repo<span class="accent">Scope</span></span></div><p>Engineering signals from recent GitHub API samples. Built for explainability, not vanity metrics.</p></footer>
+</body>
+</html>

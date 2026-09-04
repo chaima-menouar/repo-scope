@@ -1,0 +1,52 @@
+[project]
+name = "repo-scope"
+version = "0.5.0"
+description = "Repository intelligence for GitHub: health, risk, activity, comparisons and AI-assisted insights."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "requests>=2.32.0",
+    "jinja2>=3.1.0",
+    "pydantic>=2.8.0",
+    "python-dotenv>=1.0.1",
+    "openai>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.9.0",
+    "httpx>=0.28.0",
+]
+ml = [
+    "pandas>=2.2.0",
+    "scikit-learn>=1.5.0",
+    "joblib>=1.4.0",
+]
+
+[project.scripts]
+repo-scope = "repo_scope.cli:main"
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+repo_scope = ["report/templates/*.j2"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.vercel]
+entrypoint = "app:app"
