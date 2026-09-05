@@ -30,7 +30,7 @@ def build_training_csv(source: Path, output: Path) -> dict:
 
     output.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = list(rows[0].keys()) if rows else []
-    for extra in ("label_source", "label_evidence"):
+    for extra in ("label", "label_source", "label_evidence"):
         if extra not in fieldnames:
             fieldnames.append(extra)
     with output.open("w", newline="", encoding="utf-8") as handle:
@@ -43,7 +43,10 @@ def build_training_csv(source: Path, output: Path) -> dict:
         "labelled_rows": len(labelled),
         "skipped_rows": len(rows) - len(labelled),
         "class_counts": counts,
-        "label_policy": "archived=>risky; release<=180d=>healthy; older release=>watch; no independent evidence=>skip",
+        "label_policy": (
+            "archived=>risky; release<=150d=>healthy; release>=180d=>watch; "
+            "151-179d or no independent evidence=>skip"
+        ),
     }
 
 
