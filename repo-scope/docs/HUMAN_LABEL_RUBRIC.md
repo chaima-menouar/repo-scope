@@ -79,6 +79,20 @@ Raw decision fields are:
 
 The tool does not inspect repositories or choose labels automatically. Human evidence review is required.
 
+## Inter-reviewer reliability
+
+After at least two reviewers have overlapping decisions, generate the agreement audit with:
+
+```bash
+python scripts/report_reviewer_agreement.py
+```
+
+The report is written to:
+
+`data/repo_risk_human_reviewer_agreement.json`
+
+It records reviewer counts, shared repositories, raw pairwise agreement, Cohen's kappa, disagreement counts, invalid labels, and duplicate reviewer/repository decisions. Cohen's kappa is computed only for reviewer pairs with shared repositories. This audit measures human-label reliability and never promotes the model by itself.
+
 ## Adjudication
 
 Raw independent decisions are not used directly as model ground truth. Produce the durable adjudicated registry with:
@@ -116,6 +130,7 @@ For validation used to judge model quality:
 - keep reviewers blind to automation and to each other's decisions;
 - preserve all raw decisions;
 - measure reviewer agreement separately from weak-vs-human agreement;
+- use raw agreement and Cohen's kappa to audit reviewer consistency;
 - route disagreements to explicit adjudication rather than silent overwrite;
 - stratify reviewed repositories across language, popularity, archived/active state, and maintenance cadence;
 - never treat weak-label performance alone as independent validation.
@@ -125,6 +140,8 @@ For validation used to judge model quality:
 `data/repo_risk_human_review_queue.csv` is only a candidate list.
 
 `data/repo_risk_human_review_decisions.csv` contains independent raw reviewer decisions.
+
+`data/repo_risk_human_reviewer_agreement.json` audits inter-reviewer reliability and is not ground truth.
 
 `data/repo_risk_human_labels.csv` contains only adjudicated durable labels eligible to enter the combined training/validation path.
 
