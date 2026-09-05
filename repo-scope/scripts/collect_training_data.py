@@ -182,6 +182,15 @@ def collect(
     return total, failures, existing_count
 
 
+def validate_batch_outcome(collected: int, previous: int, failures: list[tuple[str, str]]) -> None:
+    """Reject false-success batches that added no new rows while requests failed."""
+    if failures and collected <= previous:
+        raise RuntimeError(
+            f"Deep collection added 0 new snapshots while {len(failures)} repositories failed. "
+            "Treating the batch as failed so orchestration can retry after the blocker clears."
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Collect RepoScope ML feature snapshots from public repositories.")
     parser.add_argument("--repos", default="data/seed_repositories.txt")
@@ -221,6 +230,7 @@ def main() -> None:
         for repo, reason in failures:
             print(f"- {repo}: {reason}")
 
+    validate_batch_outcome(collected, previous, failures)
     if not collected:
         raise SystemExit("No repository snapshots were collected.")
 
