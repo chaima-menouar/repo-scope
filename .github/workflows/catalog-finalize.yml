@@ -1,0 +1,36 @@
+name: Finalize 60k Catalog (completed)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-finalized-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: improve/portfolio-ai-cloud
+
+      - name: Verify completed 60k milestone without collection
+        working-directory: repo-scope
+        run: |
+          python - <<'PY'
+          import csv
+          import json
+          from pathlib import Path
+
+          catalog_path = Path('data/repository_catalog_100k.csv')
+          with catalog_path.open(encoding='utf-8', newline='') as handle:
+              rows = list(csv.DictReader(handle))
+          repos = {(row.get('repo') or '').strip() for row in rows if (row.get('repo') or '').strip()}
+          progress = json.loads(Path('data/repo_risk_100k_progress.json').read_text(encoding='utf-8'))
+          if len(rows) != 60000 or len(repos) != 60000:
+              raise SystemExit(f'Finalized catalog integrity failed: rows={len(rows)} unique={len(repos)}')
+          if progress.get('collection_status') != 'stopped_at_requested_60k_catalog_milestone':
+              raise SystemExit('Collection freeze marker is missing.')
+          print('The requested 60,000-repository milestone is complete and frozen.')
+          print('This workflow is verification-only and performs no collection or model writes.')
+          PY

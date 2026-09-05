@@ -1,0 +1,50 @@
+# Diverse public repositories used to bootstrap RepoScope's training dataset.
+# Keep one owner/repository slug per line.
+# Active / healthy projects
+psf/requests
+pallets/flask
+fastapi/fastapi
+pandas-dev/pandas
+scikit-learn/scikit-learn
+pytest-dev/pytest
+encode/httpx
+tiangolo/typer
+astral-sh/ruff
+numpy/numpy
+microsoft/vscode
+facebook/react
+vuejs/core
+sveltejs/svelte
+expressjs/express
+nestjs/nest
+vercel/next.js
+golang/go
+gin-gonic/gin
+kubernetes/kubernetes
+prometheus/prometheus
+hashicorp/terraform
+hashicorp/vault
+rust-lang/rust
+tokio-rs/tokio
+oven-sh/bun
+spring-projects/spring-boot
+elastic/elasticsearch
+grafana/grafana
+
+# Archived / maintenance-risk examples for class diversity
+atom/atom
+angular/angular.js
+minio/minio
+localstack/localstack
+FlowiseAI/Flowise
+AntonOsika/gpt-engineer
+base/chains
+
+# Smaller and mid-sized engineering projects
+pydantic/pydantic
+Textualize/rich
+encode/starlette
+pallets/click
+httpie/cli
+
+# Updating this manifest intentionally retriggers the reproducible dataset pipeline.

@@ -1,0 +1,13 @@
+{
+  "decision_rows": 0,
+  "reviewers": 0,
+  "reviewer_decision_counts": {},
+  "repositories_reviewed": 0,
+  "repositories_with_multiple_reviewers": 0,
+  "repositories_with_disagreement": 0,
+  "pairwise_reviewer_agreement": [],
+  "duplicate_reviewer_repo_decisions": [],
+  "invalid_labels": [],
+  "status": "insufficient_overlap",
+  "note": "Cohen's kappa is computed only for reviewer pairs with shared repositories. This report audits human-label reliability and does not promote the model."
+}

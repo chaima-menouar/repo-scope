@@ -1,0 +1,34 @@
+name: Dataset and ML baseline (frozen)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  collection-frozen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: improve/portfolio-ai-cloud
+
+      - name: Confirm collection freeze
+        working-directory: repo-scope
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('data/repo_risk_100k_progress.json')
+          payload = json.loads(path.read_text(encoding='utf-8'))
+          catalog = int(payload.get('catalog_repositories', 0) or 0)
+          status = payload.get('collection_status')
+          if catalog != 60000:
+              raise SystemExit(f'Unexpected catalog size while frozen: {catalog}')
+          if status != 'stopped_at_requested_60k_catalog_milestone':
+              raise SystemExit(f'Unexpected collection status while frozen: {status}')
+          print('RepoScope collection is intentionally frozen at 60,000 repositories.')
+          print('This archived workflow performs no collection or training writes.')
+          PY

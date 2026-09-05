@@ -1,0 +1,12 @@
+{
+  "status": "no_human_decisions",
+  "decision_rows": 0,
+  "repositories_with_decisions": 0,
+  "adjudicated_repositories": 0,
+  "insufficient_reviewer_repositories": 0,
+  "disagreement_repositories": 0,
+  "insufficient_repositories": [],
+  "disagreements": [],
+  "minimum_reviewers": 2,
+  "note": "Only repositories with a strict majority from at least the configured number of independent reviewers are written to the durable adjudicated human-label registry. Original reviewer decisions remain preserved."
+}

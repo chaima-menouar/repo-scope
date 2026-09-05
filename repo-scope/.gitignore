@@ -10,7 +10,13 @@ build/
 .env
 reports/
 models/
+!models/
+!models/.gitkeep
+!models/repo_risk.joblib
+!models/repo_risk_metrics.json
 data/*.csv
+!data/repo_risk_unlabelled.csv
+!data/repo_risk_training.csv
 db/*.sqlite
 db/*.json
 !db/.gitkeep

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RepoScope — Human Validation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/portfolio.css" />
+  <link rel="stylesheet" href="/assets/validation.css" />
+  <script defer src="/assets/validation.js"></script>
+</head>
+<body>
+  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+  <header class="nav shell">
+    <a class="brand" href="/"><span class="brand-mark">R</span><span>Repo<span class="accent">Scope</span></span></a>
+    <nav><a href="/">Analyzer</a><a class="active" href="/validation">Human Validation</a><a href="/docs">API</a></nav>
+    <span class="status-pill"><i></i> Validation workspace</span>
+  </header>
+
+  <main class="validation-main shell">
+    <section class="validation-hero">
+      <div><div class="eyebrow">HUMAN-IN-THE-LOOP ML GOVERNANCE</div><h1>Review repository risk without leaking model answers.</h1><p>This workspace exposes only reviewer-safe evidence. Weak labels, health scores, predictions and confidence stay hidden while decisions are preserved with reviewer provenance.</p></div>
+      <div class="validation-controls panel">
+        <label for="reviewer-id">Reviewer ID</label>
+        <div class="reviewer-row"><input id="reviewer-id" placeholder="reviewer-a" autocomplete="off"/><button id="load-review" class="primary-btn">Start review</button></div>
+        <small id="write-mode">Checking review mode…</small>
+      </div>
+    </section>
+
+    <section class="validation-stats" id="validation-stats">
+      <article class="panel"><span>Review queue</span><strong id="stat-queue">—</strong><small>candidate repositories</small></article>
+      <article class="panel"><span>Raw decisions</span><strong id="stat-decisions">—</strong><small>independent reviewer rows</small></article>
+      <article class="panel"><span>Adjudicated</span><strong id="stat-adjudicated">—</strong><small>durable human labels</small></article>
+      <article class="panel"><span>Model status</span><strong id="stat-readiness">—</strong><small id="stat-readiness-note">promotion gate</small></article>
+    </section>
+
+    <section class="validation-grid">
+      <article class="panel review-panel">
+        <div class="panel-head"><div><div class="panel-label">BLIND REVIEW</div><h2 id="candidate-title">Choose a reviewer ID</h2></div><span id="assignment-mode" class="mini-tag">—</span></div>
+        <div id="candidate-empty" class="validation-empty">Load a reviewer to start.</div>
+        <div id="candidate-card" class="hidden">
+          <div class="candidate-link-row"><a id="candidate-github" href="#" target="_blank" rel="noreferrer">Open repository on GitHub ↗</a><span id="candidate-snapshot"></span></div>
+          <div id="candidate-evidence" class="evidence-grid"></div>
+          <div class="rubric-note">Inspect the public repository before deciding. Use direct maintenance evidence, activity, releases, issue/PR response, contributor continuity, CI/tests/docs and deprecation signals.</div>
+          <div class="label-picker" role="group" aria-label="Human risk label">
+            <button data-label="healthy">Healthy</button><button data-label="watch">Watch</button><button data-label="risky">Risky</button>
+          </div>
+          <label for="review-notes">Evidence-based review notes</label>
+          <textarea id="review-notes" rows="5" placeholder="Example: Recent releases and active issue responses; no deprecation signal; contributor activity remains continuous."></textarea>
+          <div class="review-actions"><button id="skip-review" class="ghost-btn">Skip</button><button id="submit-review" class="primary-btn" disabled>Save decision</button></div>
+        </div>
+        <div id="review-message" class="validation-message hidden"></div>
+      </article>
+
+      <aside class="validation-side">
+        <article class="panel"><div class="panel-label">INTER-REVIEWER RELIABILITY</div><div class="status-lines"><div><span>Reviewer count</span><b id="agreement-reviewers">—</b></div><div><span>Shared repositories</span><b id="agreement-shared">—</b></div><div><span>Raw agreement</span><b id="agreement-rate">—</b></div><div><span>Cohen’s kappa</span><b id="agreement-kappa">—</b></div></div></article>
+        <article class="panel"><div class="panel-label">ADJUDICATION</div><div class="status-lines"><div><span>Status</span><b id="adjudication-status">—</b></div><div><span>Disagreements</span><b id="adjudication-disagreements">—</b></div><div><span>Insufficient reviews</span><b id="adjudication-insufficient">—</b></div></div></article>
+        <article class="panel"><div class="panel-label">MODEL PROMOTION</div><p id="readiness-copy">Human validation remains the promotion blocker.</p><button id="refresh-validation" class="ghost-btn wide">Refresh validation artifacts</button></article>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

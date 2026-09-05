@@ -15,6 +15,9 @@ GITHUB_API_VERSION = os.environ.get("GITHUB_API_VERSION", "2026-03-10")
 CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", "3600"))
 GITHUB_MAX_PAGES = int(os.environ.get("GITHUB_MAX_PAGES", "3"))
 REQUEST_TIMEOUT_SECONDS = float(os.environ.get("REQUEST_TIMEOUT_SECONDS", "15"))
+# Interactive/API requests fail fast by default. Long-running dataset jobs may
+# opt into a bounded wait so a near-term GitHub reset does not discard a batch.
+GITHUB_RATE_LIMIT_WAIT_MAX_SECONDS = int(os.environ.get("GITHUB_RATE_LIMIT_WAIT_MAX_SECONDS", "0"))
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.6-luna")
 

@@ -1,0 +1,6 @@
+{
+  "approved": false,
+  "approved_at_utc": null,
+  "approved_by": "",
+  "notes": "Scaled RepoScope risk inference remains blocked until automated readiness passes and a human explicitly approves promotion."
+}

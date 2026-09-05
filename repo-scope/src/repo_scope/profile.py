@@ -2,15 +2,17 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-import re
 from datetime import datetime, timezone
+import re
 
 from repo_scope.analysis.alerts import generate_alerts
+from repo_scope.analysis.cloud import cloud_readiness
 from repo_scope.analysis.health import bus_factor, compute_health_score, health_label
 from repo_scope.analysis.stats import compute_stats
 from repo_scope.analysis.timeseries import commits_over_time, issues_opened_vs_closed
 from repo_scope.fetch import github_api
 from repo_scope.insights import build_smart_summary
+from repo_scope.ml.inference import predict_risk
 
 
 class RepoProfile:
@@ -42,6 +44,8 @@ class RepoProfile:
 
         factor = bus_factor(self.raw["contributors"])
         self.stats["contributors"]["bus_factor"] = factor
+        self.stats["cloud_readiness"] = cloud_readiness(self.stats["signals"])
+        self.stats["ml_risk"] = predict_risk(self.stats)
         provisional_alerts = generate_alerts(self.stats, self.raw["commits"], self.raw["issues"])
         score = compute_health_score(self.stats, provisional_alerts)
         self.stats["health"] = {

@@ -1,4 +1,5 @@
 from repo_scope.analysis.alerts import generate_alerts
+from repo_scope.analysis.cloud import cloud_readiness
 from repo_scope.analysis.health import bus_factor, compute_health_score
 from repo_scope.analysis.timeseries import commits_over_time, issues_opened_vs_closed
 
@@ -26,6 +27,22 @@ def test_health_score_and_alerts():
     score = compute_health_score(stats, alerts)
     assert score >= 80
     assert not any(a.level == "critical" for a in alerts)
+
+
+def test_cloud_readiness_score():
+    readiness = cloud_readiness(
+        {
+            "has_ci": True,
+            "has_tests": True,
+            "has_docker": True,
+            "has_iac": True,
+            "has_lockfile": True,
+            "has_deploy_config": False,
+        }
+    )
+    assert readiness["score"] == 90
+    assert readiness["posture"] == "production-ready"
+    assert "deployment configuration" in readiness["missing"]
 
 
 def test_time_series_buckets():

@@ -1,0 +1,29 @@
+name: Deep Dataset and ML (frozen)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deep-collection-frozen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: improve/portfolio-ai-cloud
+
+      - name: Confirm deep collection freeze
+        working-directory: repo-scope
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('data/repo_risk_100k_progress.json').read_text(encoding='utf-8'))
+          if payload.get('collection_status') != 'stopped_at_requested_60k_catalog_milestone':
+              raise SystemExit('Collection freeze marker is missing.')
+          print('Deep collection remains frozen at the requested 60k catalog milestone.')
+          print('No GitHub API collection, manifest refresh, retraining, or dataset writes are performed here.')
+          PY

@@ -50,6 +50,28 @@ def _signals(paths: list[str], repo_info: dict) -> dict:
         "has_contributing": any_path("contributing.md", "contributing.rst"),
         "has_readme": any(path in {"readme.md", "readme.rst", "readme"} for path in lowered),
         "has_security_policy": any_path("security.md", ".github/security"),
+        "has_docker": any_path("dockerfile", "docker-compose", "compose.yml", "compose.yaml"),
+        "has_iac": any_path(".tf", "terraform/", "cloudformation", "template.yaml", "template.yml", "cdk.json"),
+        "has_lockfile": any_path(
+            "poetry.lock",
+            "uv.lock",
+            "pipfile.lock",
+            "package-lock.json",
+            "pnpm-lock.yaml",
+            "yarn.lock",
+            "go.sum",
+            "cargo.lock",
+        ),
+        "has_deploy_config": any_path(
+            "vercel.json",
+            "render.yaml",
+            "fly.toml",
+            "app.yaml",
+            "serverless.yml",
+            "serverless.yaml",
+            "railway.json",
+            "netlify.toml",
+        ),
     }
 
 

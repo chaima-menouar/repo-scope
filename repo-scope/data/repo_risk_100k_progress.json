@@ -1,0 +1,19 @@
+{
+  "catalog_target": 60000,
+  "catalog_repositories": 60000,
+  "deep_profile_target": 10000,
+  "deep_snapshots": 1267,
+  "labelled_snapshots": 697,
+  "weak_labelled_snapshots": 697,
+  "human_reviewed_snapshots": 0,
+  "human_review_queue": 250,
+  "label_type": "weak_labels_plus_optional_durable_human_review",
+  "quality_report": "data/repo_risk_100k_quality.json",
+  "human_weak_comparison": "data/repo_risk_human_weak_comparison.json",
+  "reviewer_agreement_report": "data/repo_risk_human_reviewer_agreement.json",
+  "human_adjudication_report": "data/repo_risk_human_adjudication.json",
+  "benchmark_report": "models/repo_risk_100k_benchmark.json",
+  "model_status": "experimental_weak_supervision",
+  "retrain_policy": "frozen_after_60k_catalog_manual_human_validation_only",
+  "collection_status": "stopped_at_requested_60k_catalog_milestone"
+}

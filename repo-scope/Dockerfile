@@ -8,8 +8,9 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY public ./public
+COPY models ./models
 COPY app.py ./app.py
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir ".[ml]"
 
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT}"]

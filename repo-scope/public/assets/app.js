@@ -7,6 +7,7 @@ function destroyChart(name){ if(charts[name]){ charts[name].destroy(); delete ch
 function fmt(n){ if(n === null || n === undefined) return "—"; return new Intl.NumberFormat('en',{notation:n>9999?'compact':'standard',maximumFractionDigits:1}).format(n); }
 function pct(n){ return n === null || n === undefined ? "—" : `${Math.round(n)}%`; }
 function safeText(value){ return value ?? "—"; }
+function escapeHtml(value){ return String(value ?? '').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])); }
 function setHidden(el, hidden=true){ el.classList.toggle('hidden', hidden); }
 
 async function api(path, body){
@@ -19,14 +20,38 @@ async function api(path, body){
 function showError(message){ const box=$('#error-box'); box.textContent=message; setHidden(box,false); }
 function clearError(){ setHidden($('#error-box'),true); }
 
-function renderSignals(signals){
-  const labels={has_ci:'CI/CD',has_tests:'Automated tests',has_license:'License',has_contributing:'Contributing guide',has_readme:'README',has_security_policy:'Security policy'};
-  $('#signals').innerHTML=Object.entries(labels).map(([key,label])=>`<div class="signal ${signals[key]?'yes':'no'}">${signals[key]?'●':'○'} ${label}<br><small>${signals[key]?'detected':'not detected'}</small></div>`).join('');
+function renderSignals(signals, cloud, ml){
+  const labels={has_ci:'CI/CD',has_tests:'Automated tests',has_license:'License',has_contributing:'Contributing guide',has_readme:'README',has_security_policy:'Security policy',has_docker:'Container definition',has_iac:'Infrastructure as code',has_lockfile:'Dependency lockfile',has_deploy_config:'Deployment config'};
+  const cloudBanner=cloud?`<div class="cloud-readiness-banner"><div><small>CLOUD / DEVOPS READINESS</small><strong>${escapeHtml(cloud.score)}/100</strong></div><span>${escapeHtml(cloud.posture)}</span></div>`:'';
+  const mlBanner=ml&&ml.available?`<div class="ml-risk-banner"><div><small>EXPERIMENTAL ML</small><strong>${escapeHtml(ml.predicted_label)}</strong></div><div class="ml-probs">${Object.entries(ml.probabilities||{}).map(([label,value])=>`<span>${escapeHtml(label)} ${Math.round(Number(value)*100)}%</span>`).join('')}</div></div>`:'';
+  $('#signals').innerHTML=cloudBanner+mlBanner+Object.entries(labels).map(([key,label])=>`<div class="signal ${signals[key]?'yes':'no'}">${signals[key]?'●':'○'} ${label}<br><small>${signals[key]?'detected':'not detected'}</small></div>`).join('');
 }
 
 function renderAlerts(alerts){
   $('#alert-count').textContent=`${alerts.length} alert${alerts.length===1?'':'s'}`;
   $('#alerts').innerHTML=alerts.map(a=>`<div class="alert ${a.level}"><span class="alert-dot"></span><div><strong>${a.level}</strong><p>${a.message}</p></div></div>`).join('');
+}
+
+function renderDiagnosis(result){
+  const box=$('#ai-result');
+  const d=result.diagnosis;
+  if(!d){
+    box.textContent=`${result.text}${result.note?`\n\n${result.note}`:''}`;
+    return;
+  }
+  const risks=(d.top_risks||[]).map(r=>`<article class="ai-risk ${escapeHtml(r.severity)}"><div class="ai-risk-head"><strong>${escapeHtml(r.title)}</strong><span>${escapeHtml(r.severity)}</span></div><p>${escapeHtml(r.evidence)}</p><small>${escapeHtml(r.recommendation)}</small></article>`).join('');
+  const strengths=(d.strengths||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('');
+  const actions=(d.next_actions||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('');
+  box.innerHTML=`
+    <div class="ai-diagnosis-head"><span class="ai-risk-level ${escapeHtml(d.risk_level)}">${escapeHtml(d.risk_level)} risk</span><span>${escapeHtml(result.mode)}</span></div>
+    <p class="ai-executive">${escapeHtml(d.executive_summary)}</p>
+    ${risks?`<div class="ai-risk-grid">${risks}</div>`:'<p class="ai-empty">No dominant engineering risk surfaced in the sampled evidence.</p>'}
+    <div class="ai-lists">
+      <section><strong>Strengths</strong><ul>${strengths||'<li>No strong positive signal yet.</li>'}</ul></section>
+      <section><strong>Next actions</strong><ul>${actions||'<li>Keep monitoring repository health.</li>'}</ul></section>
+    </div>
+    <div class="ai-evidence">Evidence: ${escapeHtml(d.evidence_coverage)}</div>
+    ${result.note?`<div class="ai-note">${escapeHtml(result.note)}</div>`:''}`;
 }
 
 function chartDefaults(){
@@ -61,7 +86,7 @@ function renderDashboard(data){
   $('#issue-closure').textContent=pct(s.issues.closure_rate_pct); $('#issue-sample').textContent=`${fmt(s.issues.sampled_total)} sampled issues`;
   $('#pr-merge').textContent=pct(s.pull_requests.merge_rate_pct); $('#pr-sample').textContent=`${fmt(s.pull_requests.sampled_total)} sampled PRs`;
   $('#smart-summary').textContent=data.smart_summary;
-  renderSignals(s.signals); renderAlerts(data.alerts); renderCharts(data);
+  renderSignals(s.signals,s.cloud_readiness,s.ml_risk); renderAlerts(data.alerts); renderCharts(data);
   setHidden($('#dashboard'),false); setHidden($('#ai-result'),true);
 }
 
@@ -79,7 +104,7 @@ $$('[data-repo]').forEach(btn=>btn.addEventListener('click',()=>{$('#repo-input'
 $('#refresh-btn').addEventListener('click',()=>analyze(currentRepo,true));
 $('#ai-btn').addEventListener('click',async()=>{
   const btn=$('#ai-btn'); const old=btn.innerHTML; btn.disabled=true; btn.textContent='Running analyst…'; setHidden($('#ai-result'),true);
-  try{const r=await api('/api/ai-insight',{repo:currentRepo,refresh:false}); const note=r.note?`\n\n${r.note}`:''; $('#ai-result').textContent=`${r.text}${note}`; setHidden($('#ai-result'),false);}catch(err){showError(err.message);}finally{btn.disabled=false;btn.innerHTML=old;}
+  try{const r=await api('/api/ai-insight',{repo:currentRepo,refresh:false}); renderDiagnosis(r); setHidden($('#ai-result'),false);}catch(err){showError(err.message);}finally{btn.disabled=false;btn.innerHTML=old;}
 });
 
 $('#compare-form').addEventListener('submit',async e=>{
