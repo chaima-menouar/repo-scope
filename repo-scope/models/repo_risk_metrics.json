@@ -11,6 +11,11 @@
     "risky",
     "watch"
   ],
+  "class_counts": {
+    "healthy": 28,
+    "risky": 7,
+    "watch": 5
+  },
   "label_sources": [
     "github_archived_flag",
     "recent_release_evidence",
@@ -26,7 +31,46 @@
     "has_tests": 0.016563,
     "has_ci": 0.01652
   },
-  "report": {
+  "cross_validation": {
+    "strategy": "stratified_group_k_fold",
+    "folds": 5,
+    "accuracy": 0.9,
+    "macro_f1": 0.84329,
+    "report": {
+      "healthy": {
+        "precision": 0.9629629629629629,
+        "recall": 0.9285714285714286,
+        "f1-score": 0.9454545454545454,
+        "support": 28.0
+      },
+      "risky": {
+        "precision": 0.8571428571428571,
+        "recall": 0.8571428571428571,
+        "f1-score": 0.8571428571428571,
+        "support": 7.0
+      },
+      "watch": {
+        "precision": 0.6666666666666666,
+        "recall": 0.8,
+        "f1-score": 0.7272727272727273,
+        "support": 5.0
+      },
+      "accuracy": 0.9,
+      "macro avg": {
+        "precision": 0.8289241622574955,
+        "recall": 0.8619047619047618,
+        "f1-score": 0.8432900432900432,
+        "support": 40.0
+      },
+      "weighted avg": {
+        "precision": 0.9074074074074074,
+        "recall": 0.9,
+        "f1-score": 0.9027272727272727,
+        "support": 40.0
+      }
+    }
+  },
+  "heldout_report": {
     "healthy": {
       "precision": 1.0,
       "recall": 1.0,
@@ -58,5 +102,6 @@
       "f1-score": 1.0,
       "support": 10.0
     }
-  }
+  },
+  "evaluation_warning": "Small weakly-labelled dataset; metrics may be optimistic and must not be treated as production performance. Signals: fewer than 100 labelled repository snapshots; at least one class has fewer than 20 repositories."
 }
