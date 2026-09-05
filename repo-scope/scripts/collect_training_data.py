@@ -12,7 +12,8 @@ from repo_scope.fetch import github_api
 from repo_scope.ml.training import FEATURE_COLUMNS, feature_row
 
 EVIDENCE_COLUMNS = ["snapshot_at_utc", "archived", "latest_release_age_days", "latest_release_at"]
-FIELDNAMES = ["repo", *FEATURE_COLUMNS, *EVIDENCE_COLUMNS, "label"]
+CONTEXT_COLUMNS = ["language", "stars", "forks", "open_issues", "size_kb", "catalog_pushed_at"]
+FIELDNAMES = ["repo", *FEATURE_COLUMNS, *EVIDENCE_COLUMNS, *CONTEXT_COLUMNS, "label"]
 
 
 def load_repositories(path: Path) -> list[str]:
@@ -75,6 +76,18 @@ def _release_evidence(owner: str, repo: str) -> tuple[int | None, str]:
         return None, released_at
 
 
+def _context(catalog_row: dict[str, str] | None) -> dict[str, object]:
+    row = catalog_row or {}
+    return {
+        "language": row.get("language") or "",
+        "stars": row.get("stars") or "",
+        "forks": row.get("forks") or "",
+        "open_issues": row.get("open_issues") or "",
+        "size_kb": row.get("size_kb") or "",
+        "catalog_pushed_at": row.get("pushed_at") or "",
+    }
+
+
 def _collect_one(repo: str, catalog_row: dict[str, str] | None = None) -> dict:
     owner, name = repo.split("/", 1)
     repo_info = _catalog_repo_info(repo, catalog_row) if catalog_row else github_api.get_repo_info(owner, name)
@@ -86,8 +99,6 @@ def _collect_one(repo: str, catalog_row: dict[str, str] | None = None) -> dict:
     pulls = github_api.get_pull_requests(owner, name)
     paths = github_api.get_repository_paths(owner, name, default_branch)
 
-    # Languages are intentionally omitted here because they are not part of the
-    # ML feature vector. Avoiding that REST call lowers deep-collection API cost.
     stats = compute_stats(
         repo_info,
         commits,
@@ -107,6 +118,7 @@ def _collect_one(repo: str, catalog_row: dict[str, str] | None = None) -> dict:
         "archived": int(bool(repo_info.get("archived"))),
         "latest_release_age_days": "" if release_age is None else release_age,
         "latest_release_at": released_at,
+        **_context(catalog_row),
         "label": "",
     }
 
