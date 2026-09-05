@@ -55,13 +55,33 @@ For each candidate:
 
 If there is not enough evidence for a defensible judgement, skip the candidate rather than inventing a label.
 
-## Independent blind review CLI
+## Blind reviewer assignment planner
 
-Run from `repo-scope/`:
+When real reviewer identifiers are available, create a controlled overlap before review begins. The default plan gives each reviewer 100 repositories and shares 60 repositories across reviewers so inter-reviewer agreement can be measured on the required overlap:
 
 ```bash
-python scripts/review_human_labels.py --reviewer reviewer-a --limit 20
+python scripts/build_human_review_assignments.py \
+  --reviewers reviewer-a reviewer-b \
+  --per-reviewer 100 \
+  --overlap 60
 ```
+
+The generated `data/repo_risk_human_review_assignments.csv` contains only `reviewer` and `repo`. It does not contain weak labels, model outputs, health scores, review reasons, or human decisions. Repository rows are deduplicated before assignment, shared overlap is deterministic, and reviewer-specific remainder sets are disjoint when queue capacity allows.
+
+Do not create assignments with invented reviewer identities. The identifiers must represent real independent reviewers.
+
+## Independent blind review CLI
+
+Run from `repo-scope/` with the assignment file:
+
+```bash
+python scripts/review_human_labels.py \
+  --reviewer reviewer-a \
+  --assignments data/repo_risk_human_review_assignments.csv \
+  --limit 20
+```
+
+Without `--assignments`, the CLI can still review the full pending queue. With assignments enabled, each reviewer only sees repositories assigned to them.
 
 The CLI hides automation-derived fields and writes each independent decision to:
 
@@ -135,6 +155,7 @@ For validation used to judge model quality:
 - use at least two independent reviewers per repository where practical;
 - keep reviewers blind to automation and to each other's decisions;
 - preserve all raw decisions;
+- use controlled reviewer assignments to guarantee sufficient overlap without leaking automated signals;
 - measure reviewer agreement separately from weak-vs-human agreement;
 - use raw agreement and Cohen's kappa to audit reviewer consistency;
 - route disagreements to explicit adjudication rather than silent overwrite;
@@ -145,6 +166,8 @@ For validation used to judge model quality:
 ## Ground-truth boundary
 
 `data/repo_risk_human_review_queue.csv` is only a candidate list.
+
+`data/repo_risk_human_review_assignments.csv` is an operational reviewer/repository routing file; it is not ground truth.
 
 `data/repo_risk_human_review_decisions.csv` contains independent raw reviewer decisions.
 
