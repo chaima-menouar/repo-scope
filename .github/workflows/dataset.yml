@@ -6,6 +6,7 @@ on:
     paths:
       - "repo-scope/data/seed_repositories.txt"
       - "repo-scope/scripts/discover_seed_repositories.py"
+      - "repo-scope/scripts/collect_repository_catalog.py"
       - "repo-scope/scripts/collect_training_data.py"
       - "repo-scope/scripts/bootstrap_weak_labels.py"
       - "repo-scope/scripts/train_risk_model.py"
@@ -15,12 +16,12 @@ on:
       - "repo-scope/.gitignore"
       - ".github/workflows/dataset.yml"
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 concurrency:
   group: reposcope-dataset-100k
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -28,7 +29,7 @@ permissions:
 jobs:
   collect-and-train:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 180
     defaults:
       run:
         working-directory: repo-scope
@@ -43,17 +44,37 @@ jobs:
           cache-dependency-path: repo-scope/pyproject.toml
       - name: Install RepoScope with ML dependencies
         run: pip install -e ".[ml]"
-      - name: Advance 100k repository discovery
+
+      - name: Build or advance 100k repository catalog
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python scripts/discover_seed_repositories.py \
+          python scripts/collect_repository_catalog.py \
             --target 100000 \
-            --archived-fraction 0.20 \
-            --output data/seed_repositories_100k.txt \
-            --state data/seed_repositories_100k.state.json \
-            --max-new 5000
-      - name: Collect next repository batch
+            --output data/repository_catalog_100k.csv \
+            --state data/repository_catalog_100k.state.json \
+            --max-new 100000
+
+      - name: Derive deep-analysis manifest from catalog
+        run: |
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+
+          catalog = Path('data/repository_catalog_100k.csv')
+          output = Path('data/seed_repositories_100k.txt')
+          rows = list(csv.DictReader(catalog.open(encoding='utf-8', newline=''))) if catalog.exists() else []
+          # The full 100k catalog is retained. Deep profiling is intentionally capped
+          # at 10k because each RepoScope snapshot needs several GitHub API calls.
+          # Sort deterministically and retain archived + active representation.
+          active = sorted((r for r in rows if r.get('archived') != '1'), key=lambda r: r.get('repo', ''))
+          archived = sorted((r for r in rows if r.get('archived') == '1'), key=lambda r: r.get('repo', ''))
+          deep = active[:8000] + archived[:2000]
+          output.write_text('\n'.join(r['repo'] for r in deep if r.get('repo')) + '\n', encoding='utf-8')
+          print(f'deep manifest contains {len(deep)} repositories from catalog of {len(rows)}')
+          PY
+
+      - name: Collect next deep repository batch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_MAX_PAGES: "1"
@@ -63,12 +84,14 @@ jobs:
             --output data/repo_risk_unlabelled_100k.csv \
             --workers 6 \
             --resume \
-            --limit 250
+            --limit 500
+
       - name: Build conservative weak labels
         run: |
           python scripts/bootstrap_weak_labels.py \
             --input data/repo_risk_unlabelled_100k.csv \
             --output data/repo_risk_training_100k.csv
+
       - name: Train experimental risk baseline when enough rows exist
         run: |
           ROWS=$(python - <<'PY'
@@ -83,8 +106,9 @@ jobs:
             mkdir -p models
             python scripts/train_risk_model.py data/repo_risk_training_100k.csv --output models/repo_risk_100k.joblib > models/repo_risk_100k_metrics.json
           else
-            echo "Skipping 100k model refresh until at least 200 labelled rows exist"
+            echo "Skipping model refresh until at least 200 labelled rows exist"
           fi
+
       - name: Write dataset progress summary
         run: |
           python - <<'PY'
@@ -98,24 +122,26 @@ jobs:
               with p.open(encoding='utf-8', newline='') as f:
                   return sum(1 for _ in csv.DictReader(f))
 
-          seed = Path('data/seed_repositories_100k.txt')
-          discovered = len([x for x in seed.read_text(encoding='utf-8').splitlines() if x.strip()]) if seed.exists() else 0
           payload = {
-              'target_repositories': 100000,
-              'discovered_repositories': discovered,
-              'collected_snapshots': count_csv('data/repo_risk_unlabelled_100k.csv'),
+              'catalog_target': 100000,
+              'catalog_repositories': count_csv('data/repository_catalog_100k.csv'),
+              'deep_profile_target': 10000,
+              'deep_snapshots': count_csv('data/repo_risk_unlabelled_100k.csv'),
               'labelled_snapshots': count_csv('data/repo_risk_training_100k.csv'),
+              'label_type': 'conservative_weak_labels_with_maintenance_evidence',
           }
           Path('data/repo_risk_100k_progress.json').write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
           print(payload)
           PY
+
       - name: Commit dataset progress
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f \
+            data/repository_catalog_100k.csv \
+            data/repository_catalog_100k.state.json \
             data/seed_repositories_100k.txt \
-            data/seed_repositories_100k.state.json \
             data/repo_risk_unlabelled_100k.csv \
             data/repo_risk_training_100k.csv \
             data/repo_risk_100k_progress.json
@@ -124,6 +150,6 @@ jobs:
             echo "Dataset progress unchanged"
             exit 0
           fi
-          git commit -m "ml: advance 100k dataset collection [skip ci]"
+          git commit -m "ml: advance 100k catalog and deep dataset [skip ci]"
           git pull --rebase origin improve/portfolio-ai-cloud
           git push origin HEAD:improve/portfolio-ai-cloud
