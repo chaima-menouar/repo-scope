@@ -78,3 +78,23 @@ def test_training_rejects_blank_labels(tmp_path):
         assert "non-empty evidence-backed or human-reviewed label" in str(exc)
     else:
         raise AssertionError("Expected blank labels to be rejected")
+
+
+def test_training_rejects_dataset_missing_a_risk_class(tmp_path):
+    csv_path = tmp_path / "training.csv"
+    _write_training_csv(csv_path)
+    rows = list(csv.DictReader(csv_path.open(encoding="utf-8")))
+    for row in rows:
+        if row["label"] == "risky":
+            row["label"] = "healthy"
+    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["repo", *FEATURE_COLUMNS, "label"])
+        writer.writeheader()
+        writer.writerows(rows)
+
+    try:
+        train_from_csv(str(csv_path), str(tmp_path / "model.joblib"))
+    except ValueError as exc:
+        assert "missing classes: risky" in str(exc)
+    else:
+        raise AssertionError("Expected incomplete risk-class data to be rejected")
