@@ -29,6 +29,8 @@
 - [x] Reject catalog/deep row regressions and duplicate repositories before committing progress
 - [x] Define an independent human labelling rubric (`healthy`, `watch`, `risky`)
 - [x] Add durable human-label provenance and weak-label override path
+- [x] Add a blind human-review CLI that hides weak-label/model signals and requires reviewer provenance + evidence notes
+- [x] Add tests that prevent automation fields from leaking into the reviewer evidence view
 - [x] Review class balance, missingness and leakage automatically
 - [x] Train/evaluate grouped Random Forest baseline
 - [x] Benchmark Random Forest against grouped Logistic Regression baseline
@@ -49,7 +51,7 @@
 
 ### Current v0.6 status
 
-Automated ML evidence is complete for the requested collection scope. The remaining blockers are intentionally human-governed: independent validation, production probability calibration after that validation, and an explicit promotion decision. RepoScope must not fabricate human labels or automatically promote the experimental model.
+Automated ML evidence and reviewer tooling are complete for the requested collection scope. The remaining blockers are intentionally human-governed: independent repository review, production probability calibration after that validation, and an explicit promotion decision. RepoScope must not fabricate human labels or automatically promote the experimental model.
 
 ## v0.7 — durable cloud analytics
 
