@@ -27,7 +27,7 @@ on:
 
 concurrency:
   group: reposcope-dataset-100k-v3
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
