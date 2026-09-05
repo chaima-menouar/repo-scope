@@ -22,10 +22,13 @@
 
 - [x] Collect 500+ diverse repository snapshots as the first scale milestone
 - [x] Build resumable 100k-catalog / 10k-deep-profile collection pipeline
+- [x] Preserve accumulated deep snapshots when stratified manifests change
+- [x] Reject catalog/deep row regressions and duplicate repositories before committing progress
 - [x] Define an independent human labelling rubric (`healthy`, `watch`, `risky`)
 - [x] Add durable human-label provenance and weak-label override path
 - [x] Review class balance, missingness and leakage automatically
 - [x] Train/evaluate grouped Random Forest baseline
+- [x] Benchmark Random Forest against grouped Logistic Regression baseline
 - [x] Add grouped cross-validation, balanced accuracy and confusion matrices
 - [x] Add chronological holdout on the newest repository snapshots
 - [x] Refit the saved inference artifact on all labelled rows after isolated evaluation
