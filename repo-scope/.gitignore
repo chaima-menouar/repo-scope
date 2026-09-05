@@ -11,6 +11,8 @@ build/
 reports/
 models/
 data/*.csv
+!data/repo_risk_unlabelled.csv
+!data/repo_risk_training.csv
 db/*.sqlite
 db/*.json
 !db/.gitkeep
