@@ -1,0 +1,123 @@
+{
+  "catalog": {
+    "rows": 5000,
+    "active": 4000,
+    "archived": 1000,
+    "languages": {
+      "Python": 4998,
+      "unknown": 2
+    },
+    "licenses": {
+      "MIT": 1856,
+      "unknown": 1408,
+      "Apache-2.0": 747,
+      "NOASSERTION": 490,
+      "AGPL-3.0": 214,
+      "GPL-3.0": 170,
+      "BSD-3-Clause": 27,
+      "CC0-1.0": 20,
+      "Unlicense": 13,
+      "CC-BY-4.0": 8,
+      "GPL-2.0": 7,
+      "BSD-2-Clause": 6,
+      "MPL-2.0": 6,
+      "EUPL-1.2": 5,
+      "LGPL-3.0": 5,
+      "MIT-0": 4,
+      "CC-BY-SA-4.0": 3,
+      "CERN-OHL-S-2.0": 2,
+      "LGPL-2.1": 2,
+      "WTFPL": 2,
+      "CERN-OHL-P-2.0": 1,
+      "CERN-OHL-W-2.0": 1,
+      "EPL-2.0": 1,
+      "MulanPSL-2.0": 1,
+      "UPL-1.0": 1
+    },
+    "missingness": {
+      "repo": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "language": {
+        "missing": 2,
+        "missing_pct": 0.04
+      },
+      "created_at": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "updated_at": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "pushed_at": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "default_branch": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "license": {
+        "missing": 1408,
+        "missing_pct": 28.16
+      }
+    }
+  },
+  "training": {
+    "rows": 240,
+    "unique_repositories": 240,
+    "labels": {
+      "healthy": 238,
+      "watch": 2
+    },
+    "label_balance": {
+      "healthy": 0.9917,
+      "watch": 0.0083
+    },
+    "label_sources": {
+      "recent_release_evidence": 238,
+      "stale_release_evidence": 2
+    },
+    "feature_missingness": {
+      "days_since_last_commit": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "bus_factor": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "issue_closure_rate_pct": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "pr_merge_rate_pct": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "commits_90d": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "contributors_sampled": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "has_ci": {
+        "missing": 0,
+        "missing_pct": 0.0
+      },
+      "has_tests": {
+        "missing": 0,
+        "missing_pct": 0.0
+      }
+    }
+  },
+  "warnings": [
+    "at least one label class has fewer than 20 examples",
+    "label distribution is highly imbalanced"
+  ],
+  "status": "needs_review"
+}
