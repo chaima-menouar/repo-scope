@@ -5,6 +5,7 @@ on:
     branches: [improve/portfolio-ai-cloud]
     paths:
       - "repo-scope/data/seed_repositories.txt"
+      - "repo-scope/scripts/discover_seed_repositories.py"
       - "repo-scope/scripts/collect_training_data.py"
       - "repo-scope/scripts/bootstrap_weak_labels.py"
       - "repo-scope/scripts/train_risk_model.py"
@@ -13,11 +14,13 @@ on:
       - "repo-scope/pyproject.toml"
       - "repo-scope/.gitignore"
       - ".github/workflows/dataset.yml"
+  schedule:
+    - cron: "17 */6 * * *"
   workflow_dispatch:
 
 concurrency:
-  group: reposcope-dataset-bootstrap
-  cancel-in-progress: true
+  group: reposcope-dataset-10k
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -25,6 +28,7 @@ permissions:
 jobs:
   collect-and-train:
     runs-on: ubuntu-latest
+    timeout-minutes: 55
     defaults:
       run:
         working-directory: repo-scope
@@ -39,26 +43,57 @@ jobs:
           cache-dependency-path: repo-scope/pyproject.toml
       - name: Install RepoScope with ML dependencies
         run: pip install -e ".[ml]"
-      - name: Collect repository snapshots
+      - name: Discover 10k diverse repositories once
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_MAX_PAGES: "2"
-        run: python scripts/collect_training_data.py
-      - name: Build conservative weak labels
-        run: python scripts/bootstrap_weak_labels.py
-      - name: Train experimental risk baseline
         run: |
-          mkdir -p models
-          python scripts/train_risk_model.py data/repo_risk_training.csv --output models/repo_risk.joblib > models/repo_risk_metrics.json
-      - name: Commit refreshed ML artifacts
-        run: |
-          if [ -z "$(git status --porcelain -- data/repo_risk_unlabelled.csv data/repo_risk_training.csv models/repo_risk.joblib models/repo_risk_metrics.json)" ]; then
-            echo "ML artifacts unchanged"
-            exit 0
+          if [ ! -s data/seed_repositories_10k.txt ]; then
+            python scripts/discover_seed_repositories.py --target 10000 --archived-fraction 0.20
+          else
+            echo "10k seed manifest already exists"
           fi
+      - name: Collect next repository batch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_MAX_PAGES: "1"
+        run: |
+          python scripts/collect_training_data.py \
+            --repos data/seed_repositories_10k.txt \
+            --output data/repo_risk_unlabelled_10k.csv \
+            --workers 6 \
+            --resume \
+            --limit 250
+      - name: Build conservative weak labels
+        run: |
+          python scripts/bootstrap_weak_labels.py \
+            --input data/repo_risk_unlabelled_10k.csv \
+            --output data/repo_risk_training_10k.csv
+      - name: Train experimental risk baseline when enough rows exist
+        run: |
+          ROWS=$(python - <<'PY'
+          import csv
+          from pathlib import Path
+          p = Path('data/repo_risk_training_10k.csv')
+          print(sum(1 for _ in csv.DictReader(p.open(encoding='utf-8'))) if p.exists() else 0)
+          PY
+          )
+          echo "Labelled rows: $ROWS"
+          if [ "$ROWS" -ge 200 ]; then
+            mkdir -p models
+            python scripts/train_risk_model.py data/repo_risk_training_10k.csv --output models/repo_risk_10k.joblib > models/repo_risk_10k_metrics.json
+          else
+            echo "Skipping 10k model refresh until at least 200 labelled rows exist"
+          fi
+      - name: Commit dataset progress
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f data/repo_risk_unlabelled.csv data/repo_risk_training.csv models/repo_risk.joblib models/repo_risk_metrics.json
-          git commit -m "ml: refresh experimental risk baseline [skip ci]"
+          git add -f data/seed_repositories_10k.txt data/repo_risk_unlabelled_10k.csv data/repo_risk_training_10k.csv
+          if [ -f models/repo_risk_10k.joblib ]; then git add -f models/repo_risk_10k.joblib models/repo_risk_10k_metrics.json; fi
+          if git diff --cached --quiet; then
+            echo "Dataset progress unchanged"
+            exit 0
+          fi
+          git commit -m "ml: advance 10k dataset collection [skip ci]"
           git pull --rebase origin improve/portfolio-ai-cloud
           git push origin HEAD:improve/portfolio-ai-cloud
