@@ -21,7 +21,7 @@ FIELDS = [
     "created_at", "updated_at", "pushed_at", "default_branch", "license", "topics",
 ]
 CHECKPOINT_EVERY = 1_000
-STATE_SCHEME = 2
+STATE_SCHEME = 3
 
 
 def _headers() -> dict[str, str]:
@@ -33,7 +33,7 @@ def _headers() -> dict[str, str]:
 
 
 def _partitions() -> list[tuple[bool, str, str, int]]:
-    """Interleave languages and popularity bands so each bounded run stays diverse."""
+    """Interleave languages, popularity bands and archive state for broad coverage."""
     active: list[tuple[bool, str, str, int]] = []
     archived: list[tuple[bool, str, str, int]] = []
     for year in reversed(YEARS):
@@ -69,8 +69,7 @@ def _load_state(path: Path) -> tuple[int, int]:
         if int(payload.get("scheme", 0)) != STATE_SCHEME:
             return 0, 1
         partition_index = max(0, int(payload.get("partition_index", 0)))
-        page = max(1, min(10, int(payload.get("page", 1))))
-        return partition_index, page
+        return partition_index, 1
     except (ValueError, TypeError, json.JSONDecodeError):
         return 0, 1
 
@@ -94,14 +93,14 @@ def _write_checkpoint(
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_text(
         json.dumps(
-            {"scheme": STATE_SCHEME, "partition_index": partition_index, "page": page},
+            {"scheme": STATE_SCHEME, "partition_index": partition_index, "page": 1},
             indent=2,
         ) + "\n",
         encoding="utf-8",
     )
 
 
-def _request(session: requests.Session, query: str, page: int) -> list[dict]:
+def _request(session: requests.Session, query: str, page: int = 1) -> list[dict]:
     for attempt in range(6):
         response = session.get(
             API,
@@ -142,106 +141,71 @@ def _row(item: dict) -> dict[str, object]:
 def collect(target: int, output: Path, state_path: Path, max_new: int) -> dict[str, int]:
     rows = _load_rows(output)
     partitions = _partitions()
-    partition_index, start_page = _load_state(state_path)
+    partition_index, _ = _load_state(state_path)
     partition_index = min(partition_index, len(partitions))
     if len(rows) >= target:
-        return {"total": len(rows), "added": 0, "partition_index": partition_index, "page": start_page}
+        return {"total": len(rows), "added": 0, "partition_index": partition_index, "page": 1}
 
     session = requests.Session()
     session.headers.update(_headers())
     added = 0
     last_checkpoint = 0
 
+    # Deliberately read only the first 100 results of each narrow stratum.
+    # The catalog has thousands of language/year/star/archive strata, so this
+    # trades depth inside one query for substantially better dataset diversity.
     while partition_index < len(partitions) and len(rows) < target and added < max_new:
         archived, language, stars, year = partitions[partition_index]
         query = (
             f"language:{language} stars:{stars} archived:{str(archived).lower()} "
             f"created:{year}-01-01..{year}-12-31"
         )
-        page = start_page
-        partition_finished = False
-        while page <= 10 and len(rows) < target and added < max_new:
-            items = _request(session, query, page)
-            if not items:
-                partition_finished = True
-                break
-            hit_batch_limit = False
-            for item in items:
-                record = _row(item)
-                repo = str(record["repo"])
-                if repo and repo not in rows:
-                    rows[repo] = {key: str(value) for key, value in record.items()}
-                    added += 1
-                    if added - last_checkpoint >= CHECKPOINT_EVERY:
-                        _write_checkpoint(
-                            rows=rows,
-                            output=output,
-                            state_path=state_path,
-                            partition_index=partition_index,
-                            page=page,
-                            target=target,
-                        )
-                        last_checkpoint = added
-                        print(f"checkpoint: total={len(rows)} added={added}", flush=True)
-                    if len(rows) >= target or added >= max_new:
-                        hit_batch_limit = True
-                        break
-            if hit_batch_limit:
-                _write_checkpoint(
-                    rows=rows,
-                    output=output,
-                    state_path=state_path,
-                    partition_index=partition_index,
-                    page=page,
-                    target=target,
-                )
-                return {
-                    "total": min(len(rows), target),
-                    "added": added,
-                    "partition_index": partition_index,
-                    "page": page,
-                }
-            if len(items) < 100:
-                partition_finished = True
-                break
-            page += 1
-            _write_checkpoint(
-                rows=rows,
-                output=output,
-                state_path=state_path,
-                partition_index=partition_index,
-                page=page,
-                target=target,
-            )
-            time.sleep(2.1)
+        items = _request(session, query, 1)
+        for item in items:
+            record = _row(item)
+            repo = str(record["repo"])
+            if repo and repo not in rows:
+                rows[repo] = {key: str(value) for key, value in record.items()}
+                added += 1
+                if added - last_checkpoint >= CHECKPOINT_EVERY:
+                    _write_checkpoint(
+                        rows=rows,
+                        output=output,
+                        state_path=state_path,
+                        partition_index=partition_index,
+                        page=1,
+                        target=target,
+                    )
+                    last_checkpoint = added
+                    print(f"checkpoint: total={len(rows)} added={added}", flush=True)
+                if len(rows) >= target or added >= max_new:
+                    break
 
-        if partition_finished or page > 10:
-            partition_index += 1
-            start_page = 1
-            _write_checkpoint(
-                rows=rows,
-                output=output,
-                state_path=state_path,
-                partition_index=partition_index,
-                page=1,
-                target=target,
-            )
-        else:
-            start_page = page
+        partition_index += 1
+        _write_checkpoint(
+            rows=rows,
+            output=output,
+            state_path=state_path,
+            partition_index=partition_index,
+            page=1,
+            target=target,
+        )
+        # Authenticated GitHub repository search normally permits 30 requests/minute.
+        time.sleep(2.1)
 
     _write_checkpoint(
         rows=rows,
         output=output,
         state_path=state_path,
         partition_index=partition_index,
-        page=start_page,
+        page=1,
         target=target,
     )
     return {
         "total": min(len(rows), target),
         "added": added,
         "partition_index": partition_index,
-        "page": start_page,
+        "page": 1,
     }
 
 
