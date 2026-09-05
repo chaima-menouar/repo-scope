@@ -28,7 +28,11 @@ def test_catalog_resumes_same_page_without_skipping_items(tmp_path, monkeypatch)
     assert first["total"] == 2
     assert first["partition_index"] == 0
     assert first["page"] == 1
-    assert json.loads(state.read_text(encoding="utf-8")) == {"partition_index": 0, "page": 1}
+    assert json.loads(state.read_text(encoding="utf-8")) == {
+        "scheme": catalog.STATE_SCHEME,
+        "partition_index": 0,
+        "page": 1,
+    }
 
     second = catalog.collect(10, output, state, max_new=2)
     assert second["total"] == 3
@@ -36,7 +40,15 @@ def test_catalog_resumes_same_page_without_skipping_items(tmp_path, monkeypatch)
     assert set(catalog._load_rows(output)) == {"org/a", "org/b", "org/c"}
 
 
-def test_legacy_catalog_state_defaults_to_first_page(tmp_path):
+def test_legacy_catalog_state_resets_when_partition_scheme_changes(tmp_path):
     state = tmp_path / "state.json"
-    state.write_text('{"partition_index": 7}\n', encoding="utf-8")
-    assert catalog._load_state(state) == (7, 1)
+    state.write_text('{"partition_index": 7, "page": 3}\n', encoding="utf-8")
+    assert catalog._load_state(state) == (0, 1)
+
+
+def test_partition_prefix_interleaves_languages_and_archive_states():
+    prefix = catalog._partitions()[:40]
+    languages = {language for _, language, _, _ in prefix}
+    archive_states = {archived for archived, _, _, _ in prefix}
+    assert len(languages) >= 8
+    assert archive_states == {False, True}
