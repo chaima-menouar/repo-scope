@@ -20,7 +20,7 @@ on:
 
 concurrency:
   group: reposcope-dataset-100k
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -43,15 +43,16 @@ jobs:
           cache-dependency-path: repo-scope/pyproject.toml
       - name: Install RepoScope with ML dependencies
         run: pip install -e ".[ml]"
-      - name: Discover 100k diverse repositories once
+      - name: Advance 100k repository discovery
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ ! -s data/seed_repositories_100k.txt ]; then
-            python scripts/discover_seed_repositories.py --target 100000 --archived-fraction 0.20 --output data/seed_repositories_100k.txt
-          else
-            echo "100k seed manifest already exists"
-          fi
+          python scripts/discover_seed_repositories.py \
+            --target 100000 \
+            --archived-fraction 0.20 \
+            --output data/seed_repositories_100k.txt \
+            --state data/seed_repositories_100k.state.json \
+            --max-new 5000
       - name: Collect next repository batch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,11 +85,40 @@ jobs:
           else
             echo "Skipping 100k model refresh until at least 200 labelled rows exist"
           fi
+      - name: Write dataset progress summary
+        run: |
+          python - <<'PY'
+          import csv, json
+          from pathlib import Path
+
+          def count_csv(path):
+              p = Path(path)
+              if not p.exists():
+                  return 0
+              with p.open(encoding='utf-8', newline='') as f:
+                  return sum(1 for _ in csv.DictReader(f))
+
+          seed = Path('data/seed_repositories_100k.txt')
+          discovered = len([x for x in seed.read_text(encoding='utf-8').splitlines() if x.strip()]) if seed.exists() else 0
+          payload = {
+              'target_repositories': 100000,
+              'discovered_repositories': discovered,
+              'collected_snapshots': count_csv('data/repo_risk_unlabelled_100k.csv'),
+              'labelled_snapshots': count_csv('data/repo_risk_training_100k.csv'),
+          }
+          Path('data/repo_risk_100k_progress.json').write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
+          print(payload)
+          PY
       - name: Commit dataset progress
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f data/seed_repositories_100k.txt data/repo_risk_unlabelled_100k.csv data/repo_risk_training_100k.csv
+          git add -f \
+            data/seed_repositories_100k.txt \
+            data/seed_repositories_100k.state.json \
+            data/repo_risk_unlabelled_100k.csv \
+            data/repo_risk_training_100k.csv \
+            data/repo_risk_100k_progress.json
           if [ -f models/repo_risk_100k.joblib ]; then git add -f models/repo_risk_100k.joblib models/repo_risk_100k_metrics.json; fi
           if git diff --cached --quiet; then
             echo "Dataset progress unchanged"
