@@ -29,7 +29,7 @@ def _headers() -> dict[str, str]:
     headers = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": GITHUB_API_VERSION,
-        "User-Agent": "RepoScope/0.5.0",
+        "User-Agent": "RepoScope/0.6.0",
     }
     if GITHUB_TOKEN:
         headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
