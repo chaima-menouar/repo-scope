@@ -45,22 +45,38 @@ jobs:
 
       - name: Derive targeted deep-analysis manifest
         run: |
-          WATCH=$(python - <<'PY'
-          import csv
+          read WATCH TEMPORAL_WATCH <<EOF
+          $(python - <<'PY'
+          import csv, json
           from pathlib import Path
-          path = Path('data/repo_risk_training_combined_100k.csv')
-          if not path.exists():
-              print(0)
-          else:
-              with path.open(encoding='utf-8', newline='') as handle:
-                  print(sum(1 for row in csv.DictReader(handle) if (row.get('label') or '').strip() == 'watch'))
+
+          training = Path('data/repo_risk_training_combined_100k.csv')
+          watch = 0
+          if training.exists():
+              with training.open(encoding='utf-8', newline='') as handle:
+                  watch = sum(1 for row in csv.DictReader(handle) if (row.get('label') or '').strip() == 'watch')
+
+          temporal_watch = 0
+          metrics = Path('models/repo_risk_100k_metrics.json')
+          if metrics.exists():
+              try:
+                  payload = json.loads(metrics.read_text(encoding='utf-8'))
+                  temporal_watch = int(
+                      payload.get('temporal_holdout', {})
+                      .get('test_class_counts', {})
+                      .get('watch', 0) or 0
+                  )
+              except (ValueError, TypeError, json.JSONDecodeError):
+                  temporal_watch = 0
+          print(watch, temporal_watch)
           PY
           )
-          if [ "$WATCH" -lt 20 ]; then
+          EOF
+          if [ "$WATCH" -lt 50 ] || [ "$TEMPORAL_WATCH" -lt 10 ]; then
             ARCHIVED_FRACTION=0.10
             STALE_FRACTION=0.75
             STALE_DAYS=180
-            echo "watch support is $WATCH; prioritizing stale-active repositories"
+            echo "watch support=$WATCH, temporal watch support=$TEMPORAL_WATCH; prioritizing stale-active repositories"
           else
             ARCHIVED_FRACTION=0.20
             STALE_FRACTION=0.35
@@ -105,30 +121,61 @@ jobs:
 
       - name: Benchmark and train when class support is ready
         run: |
-          read ROWS PREVIOUS HEALTHY WATCH RISKY <<EOF
+          read ROWS PREVIOUS HEALTHY WATCH RISKY MODEL_HEALTHY MODEL_WATCH MODEL_RISKY <<EOF
           $(python - <<'PY'
           import csv, json
           from collections import Counter
           from pathlib import Path
+
           training = Path('data/repo_risk_training_combined_100k.csv')
           rows_data = list(csv.DictReader(training.open(encoding='utf-8'))) if training.exists() else []
           counts = Counter((row.get('label') or '').strip() for row in rows_data)
+
           progress = Path('data/repo_risk_100k_progress.json')
           previous = 0
           if progress.exists():
-              try: previous = int(json.loads(progress.read_text()).get('labelled_snapshots', 0))
-              except Exception: previous = 0
-          print(len(rows_data), previous, counts.get('healthy',0), counts.get('watch',0), counts.get('risky',0))
+              try:
+                  previous = int(json.loads(progress.read_text(encoding='utf-8')).get('labelled_snapshots', 0))
+              except (ValueError, TypeError, json.JSONDecodeError):
+                  previous = 0
+
+          model_counts = {}
+          metrics = Path('models/repo_risk_100k_metrics.json')
+          if metrics.exists():
+              try:
+                  model_counts = json.loads(metrics.read_text(encoding='utf-8')).get('class_counts', {}) or {}
+              except (ValueError, TypeError, json.JSONDecodeError):
+                  model_counts = {}
+
+          print(
+              len(rows_data), previous,
+              counts.get('healthy', 0), counts.get('watch', 0), counts.get('risky', 0),
+              int(model_counts.get('healthy', 0) or 0),
+              int(model_counts.get('watch', 0) or 0),
+              int(model_counts.get('risky', 0) or 0),
+          )
           PY
           )
           EOF
+          echo "current classes: healthy=$HEALTHY watch=$WATCH risky=$RISKY; model classes: healthy=$MODEL_HEALTHY watch=$MODEL_WATCH risky=$MODEL_RISKY"
+
           if [ "$HEALTHY" -ge 10 ] && [ "$WATCH" -ge 10 ] && [ "$RISKY" -ge 10 ]; then
             python scripts/benchmark_risk_models.py data/repo_risk_training_combined_100k.csv --output models/repo_risk_100k_benchmark.json
           fi
+
           SHOULD_TRAIN=0
           if [ "$HEALTHY" -ge 20 ] && [ "$WATCH" -ge 20 ] && [ "$RISKY" -ge 20 ]; then
             if [ "$ROWS" -ge 200 ] && [ ! -f models/repo_risk_100k.joblib ]; then SHOULD_TRAIN=1; fi
             if [ "$ROWS" -ge 500 ] && [ $((ROWS / 500)) -gt $((PREVIOUS / 500)) ]; then SHOULD_TRAIN=1; fi
+            # Readiness thresholds are meaningful model-version boundaries. If
+            # the live dataset has crossed 50/class but the saved model was
+            # trained before that crossing, refresh immediately instead of
+            # waiting for the next coarse 500-label milestone.
+            if [ "$HEALTHY" -ge 50 ] && [ "$WATCH" -ge 50 ] && [ "$RISKY" -ge 50 ]; then
+              if [ "$MODEL_HEALTHY" -lt 50 ] || [ "$MODEL_WATCH" -lt 50 ] || [ "$MODEL_RISKY" -lt 50 ]; then
+                SHOULD_TRAIN=1
+              fi
+            fi
           fi
           if [ "$SHOULD_TRAIN" -eq 1 ]; then
             python scripts/train_risk_model.py data/repo_risk_training_combined_100k.csv --output models/repo_risk_100k.joblib > models/repo_risk_100k_metrics.json
@@ -159,7 +206,7 @@ jobs:
             'human_weak_comparison':'data/repo_risk_human_weak_comparison.json',
             'benchmark_report':'models/repo_risk_100k_benchmark.json',
             'model_status':'experimental_weak_supervision',
-            'retrain_policy':'all_classes_min_20_first_model_at_200_then_each_500_label_milestone',
+            'retrain_policy':'all_classes_min_20_first_model_at_200_readiness_crossing_at_50_then_each_500_label_milestone',
           }
           Path('data/repo_risk_100k_progress.json').write_text(json.dumps(payload,indent=2)+'\n')
           print(payload)
