@@ -1,0 +1,2 @@
+RepoScope dataset continuation trigger.
+This file is updated by the scheduled RepoScope watcher only when the latest dataset run is complete and collection targets are still incomplete.
