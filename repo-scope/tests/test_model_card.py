@@ -29,11 +29,26 @@ def test_model_card_uses_committed_artifact_values(tmp_path):
         "source_csv": "data/train.csv",
         "dataset_sha256": "abc123",
         "trained_at_utc": "2026-09-05T00:00:00+00:00",
-        "scikit_learn_version": "1.6.0",
+        "scikit_learn_version": "1.9.0",
         "repositories": 72,
         "train_repositories": 54,
         "test_repositories": 18,
-        "cross_validation": {"strategy": "stratified_group_k_fold", "folds": 5, "accuracy": 0.8, "macro_f1": 0.74},
+        "cross_validation": {
+            "strategy": "stratified_group_k_fold",
+            "folds": 5,
+            "labels": ["healthy", "watch", "risky"],
+            "accuracy": 0.8,
+            "balanced_accuracy": 0.71,
+            "macro_f1": 0.74,
+            "confusion_matrix": [[45, 3, 2], [2, 8, 2], [1, 2, 7]],
+        },
+        "heldout": {
+            "labels": ["healthy", "watch", "risky"],
+            "accuracy": 0.78,
+            "balanced_accuracy": 0.68,
+            "macro_f1": 0.66,
+            "confusion_matrix": [[12, 1, 0], [1, 2, 1], [0, 1, 2]],
+        },
         "evaluation_warning": "experimental data warning",
     }), encoding="utf-8")
 
@@ -42,6 +57,9 @@ def test_model_card_uses_committed_artifact_values(tmp_path):
     assert "Deep snapshots collected: 100" in card
     assert "`healthy`: 50" in card
     assert "Cross-validation macro F1: 0.74" in card
+    assert "Cross-validation balanced accuracy: 0.71" in card
+    assert "Holdout balanced accuracy: 0.68" in card
+    assert "| healthy | 45 | 3 | 2 |" in card
     assert "`abc123`" in card
     assert "experimental data warning" in card
     assert "experimental weak supervision" in card
