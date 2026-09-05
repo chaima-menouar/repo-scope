@@ -1,3 +1,4 @@
+from repo_scope.ml import inference
 from repo_scope.ml.inference import predict_risk
 from repo_scope.ml.labels import assign_weak_label
 
@@ -17,3 +18,22 @@ def test_ml_inference_fails_closed_without_artifact(tmp_path):
     result = predict_risk({}, tmp_path / "missing.joblib")
     assert result["available"] is False
     assert result["status"] == "model_not_available"
+
+
+def test_default_model_prefers_scaled_artifact_when_present(tmp_path, monkeypatch):
+    legacy = tmp_path / "repo_risk.joblib"
+    scaled = tmp_path / "repo_risk_100k.joblib"
+    legacy.write_bytes(b"legacy")
+    scaled.write_bytes(b"scaled")
+    monkeypatch.setattr(inference, "LEGACY_MODEL_PATH", legacy)
+    monkeypatch.setattr(inference, "SCALED_MODEL_PATH", scaled)
+    assert inference.default_model_path() == scaled
+
+
+def test_default_model_falls_back_to_legacy_artifact(tmp_path, monkeypatch):
+    legacy = tmp_path / "repo_risk.joblib"
+    scaled = tmp_path / "repo_risk_100k.joblib"
+    legacy.write_bytes(b"legacy")
+    monkeypatch.setattr(inference, "LEGACY_MODEL_PATH", legacy)
+    monkeypatch.setattr(inference, "SCALED_MODEL_PATH", scaled)
+    assert inference.default_model_path() == legacy
