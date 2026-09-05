@@ -32,10 +32,15 @@
 - [x] Define an independent human labelling rubric (`healthy`, `watch`, `risky`)
 - [x] Add durable human-label provenance and weak-label override path
 - [x] Add a blind human-review CLI that hides weak-label/model signals and requires reviewer provenance + evidence notes
+- [x] Add a blind reviewer-assignment planner with deterministic language-balanced ordering and controlled overlap
+- [x] Keep assignment files limited to reviewer/repository routing only, with no automated labels or model signals
+- [x] Deduplicate queue repositories before reviewer assignment and reject impossible assignment capacity
 - [x] Preserve multiple independent reviewer decisions per repository without silent overwrite
 - [x] Add strict-majority adjudication that keeps ties/disagreements out of durable ground truth
+- [x] Persist a machine-readable adjudication audit with no/partial/full status and unresolved cases
+- [x] Reject manually edited decisions missing evidence notes or review timestamps
 - [x] Add tests that prevent automation fields from leaking into the reviewer evidence view
-- [x] Add tests for reviewer-specific pending queues and multi-reviewer adjudication
+- [x] Add tests for reviewer-specific pending queues, controlled assignments and multi-reviewer adjudication
 - [x] Add inter-reviewer reliability reporting with raw agreement and Cohen's kappa
 - [x] Add tests for reviewer overlap, disagreement and kappa reporting
 - [x] Add a dedicated human-validation workflow that performs no repository collection
@@ -58,13 +63,13 @@
 - [x] Add failure-slice diagnostics for language, repository size and maintenance style
 - [x] Add a machine-readable promotion-readiness gate with explicit blocking reasons
 - [x] Keep scaled prediction experimental while independent human validation is insufficient
-- [ ] Build a sufficiently large stratified human-reviewed validation subset
+- [ ] Build a sufficiently large stratified human-reviewed validation subset with real independent reviewers
 - [ ] Calibrate production-facing probabilities only after independent human validation supports it
 - [ ] Promote scaled prediction only after the readiness gate passes and a manual review approves it
 
 ### Current v0.6 status
 
-Automated collection and ML evidence are frozen at the requested 60k scope. Reviewer tooling, independent decision storage, adjudication, reviewer-agreement auditing and readiness integrity checks are implemented. Raw reviewer decisions remain separate from adjudicated ground truth. The remaining blockers are intentionally human-governed: complete independent repository review at sufficient scale, calibrate production-facing probabilities only after that validation, and make an explicit manual promotion decision. RepoScope must not fabricate human labels, restart collection silently, or automatically promote the experimental model.
+Automated collection and ML evidence are frozen at the requested 60k scope. Reviewer tooling now includes controlled blind assignments, independent decision storage, durable adjudication auditing, reviewer-agreement reporting and readiness integrity checks. Raw reviewer decisions remain separate from adjudicated ground truth. The remaining blockers are intentionally human-governed: real independent reviewers must complete the validation subset at sufficient scale, production-facing probabilities may only be calibrated after that evidence exists, and model promotion still requires an explicit manual decision. RepoScope must not fabricate human labels, invent reviewer identities, restart collection silently, or automatically promote the experimental model.
 
 ## v0.7 — durable cloud analytics
 
