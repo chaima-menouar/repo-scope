@@ -48,6 +48,9 @@
 - [x] Gate readiness on human-review audit integrity, including duplicate/invalid decision checks
 - [x] Require at least 60 repositories with multiple independent reviewers once human comparison is otherwise ready
 - [x] Keep Cohen's kappa as an audit metric without inventing an arbitrary promotion threshold
+- [x] Add `/validation` dashboard for reviewer-safe evidence, review submission, agreement/adjudication status and readiness visibility
+- [x] Keep human-review dashboard writes disabled by default and require an explicit local environment flag
+- [x] Keep dashboard candidate payloads free of weak labels, predictions, confidence, health score and review reasons
 - [x] Document the human-review workflow and raw-vs-adjudicated ground-truth boundary
 - [x] Review class balance, missingness and leakage automatically
 - [x] Train/evaluate grouped Random Forest baseline
@@ -69,7 +72,7 @@
 
 ### Current v0.6 status
 
-Automated collection and ML evidence are frozen at the requested 60k scope. Reviewer tooling now includes controlled blind assignments, independent decision storage, durable adjudication auditing, reviewer-agreement reporting and readiness integrity checks. Raw reviewer decisions remain separate from adjudicated ground truth. The remaining blockers are intentionally human-governed: real independent reviewers must complete the validation subset at sufficient scale, production-facing probabilities may only be calibrated after that evidence exists, and model promotion still requires an explicit manual decision. RepoScope must not fabricate human labels, invent reviewer identities, restart collection silently, or automatically promote the experimental model.
+Automated collection and ML evidence are frozen at the requested 60k scope. Reviewer tooling now includes controlled blind assignments, independent decision storage, durable adjudication auditing, reviewer-agreement reporting, readiness integrity checks and a browser-based `/validation` workspace. The dashboard exposes reviewer-safe evidence only and keeps write operations disabled unless a local review session explicitly enables them. Raw reviewer decisions remain separate from adjudicated ground truth. The remaining blockers are intentionally human-governed: real independent reviewers must complete the validation subset at sufficient scale, production-facing probabilities may only be calibrated after that evidence exists, and model promotion still requires an explicit manual decision. RepoScope must not fabricate human labels, invent reviewer identities, restart collection silently, or automatically promote the experimental model.
 
 ## v0.7 — durable cloud analytics
 
