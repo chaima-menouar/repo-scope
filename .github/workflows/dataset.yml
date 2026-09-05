@@ -13,6 +13,7 @@ on:
       - "repo-scope/scripts/export_label_review_queue.py"
       - "repo-scope/scripts/train_risk_model.py"
       - "repo-scope/scripts/report_dataset_quality.py"
+      - "repo-scope/scripts/generate_model_card.py"
       - "repo-scope/src/repo_scope/ml/**"
       - "repo-scope/src/repo_scope/fetch/github_api.py"
       - "repo-scope/pyproject.toml"
@@ -164,6 +165,18 @@ jobs:
           print(payload)
           PY
 
+      - name: Generate model card when model metrics exist
+        run: |
+          if [ -f models/repo_risk_100k_metrics.json ]; then
+            python scripts/generate_model_card.py \
+              --progress data/repo_risk_100k_progress.json \
+              --quality data/repo_risk_100k_quality.json \
+              --metrics models/repo_risk_100k_metrics.json \
+              --output models/repo_risk_100k_model_card.md
+          else
+            echo "No scaled model metrics yet; model card will be generated at the first training milestone"
+          fi
+
       - name: Commit dataset progress
         run: |
           git config user.name "github-actions[bot]"
@@ -178,6 +191,7 @@ jobs:
             data/repo_risk_100k_quality.json \
             data/repo_risk_100k_progress.json
           if [ -f models/repo_risk_100k.joblib ]; then git add -f models/repo_risk_100k.joblib models/repo_risk_100k_metrics.json; fi
+          if [ -f models/repo_risk_100k_model_card.md ]; then git add -f models/repo_risk_100k_model_card.md; fi
           if git diff --cached --quiet; then
             echo "Dataset progress unchanged"
             exit 0
