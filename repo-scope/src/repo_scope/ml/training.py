@@ -1,6 +1,8 @@
 """Supervised training pipeline for RepoScope's experimental repository-risk model."""
 from __future__ import annotations
 
+import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
 
 FEATURE_COLUMNS = [
@@ -51,12 +53,17 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
     try:
         import joblib
         import pandas as pd
+        import sklearn
         from sklearn.metrics import accuracy_score, classification_report, f1_score
         from sklearn.model_selection import GroupShuffleSplit, StratifiedGroupKFold, cross_val_predict
     except ImportError as exc:
         raise RuntimeError("Install ML dependencies with: pip install -e .[ml]") from exc
 
-    frame = pd.read_csv(csv_path)
+    source = Path(csv_path)
+    dataset_sha256 = hashlib.sha256(source.read_bytes()).hexdigest()
+    trained_at_utc = datetime.now(timezone.utc).isoformat()
+
+    frame = pd.read_csv(source)
     _validate_training_frame(frame)
 
     x = frame[FEATURE_COLUMNS].fillna(0)
@@ -127,6 +134,11 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         "features": FEATURE_COLUMNS,
         "classes": [str(value) for value in model.classes_],
         "training_metadata": {
+            "trained_at_utc": trained_at_utc,
+            "source_csv": str(source),
+            "dataset_sha256": dataset_sha256,
+            "scikit_learn_version": sklearn.__version__,
+            "model_type": type(model).__name__,
             "rows": len(frame),
             "repositories": int(groups.nunique()),
             "train_repositories": len(train_repos),
@@ -145,6 +157,11 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
 
     return {
         "model_path": str(target),
+        "trained_at_utc": trained_at_utc,
+        "source_csv": str(source),
+        "dataset_sha256": dataset_sha256,
+        "scikit_learn_version": sklearn.__version__,
+        "model_type": type(model).__name__,
         "rows": len(frame),
         "repositories": int(groups.nunique()),
         "train_rows": len(train_idx),
