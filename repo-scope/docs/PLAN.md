@@ -31,6 +31,7 @@
 - [x] Add durable human-label provenance and weak-label override path
 - [x] Add a blind human-review CLI that hides weak-label/model signals and requires reviewer provenance + evidence notes
 - [x] Add tests that prevent automation fields from leaking into the reviewer evidence view
+- [x] Document the human-review workflow in README, ML methodology and reviewer rubric
 - [x] Review class balance, missingness and leakage automatically
 - [x] Train/evaluate grouped Random Forest baseline
 - [x] Benchmark Random Forest against grouped Logistic Regression baseline
