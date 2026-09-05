@@ -19,46 +19,103 @@ FEATURE_COLUMNS = [
 ]
 
 
+def _validate_training_frame(frame) -> None:
+    required = FEATURE_COLUMNS + ["repo", "label"]
+    missing = [column for column in required if column not in frame.columns]
+    if missing:
+        raise ValueError(f"Training CSV is missing columns: {', '.join(missing)}")
+    if frame.empty:
+        raise ValueError("Training data is empty.")
+    if frame["label"].isna().any() or frame["label"].astype(str).str.strip().eq("").any():
+        raise ValueError("Every training row must have a non-empty human-assigned label.")
+    if frame["repo"].isna().any() or frame["repo"].astype(str).str.strip().eq("").any():
+        raise ValueError("Every training row must identify its repository in the 'repo' column.")
+    if frame["label"].nunique() < 2:
+        raise ValueError("Training data must contain at least two label classes.")
+    if frame["repo"].nunique() < 4:
+        raise ValueError("Training data must contain at least four distinct repositories.")
+
+
 def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") -> dict:
     try:
         import joblib
         import pandas as pd
         from sklearn.ensemble import RandomForestClassifier
         from sklearn.metrics import classification_report
-        from sklearn.model_selection import train_test_split
+        from sklearn.model_selection import GroupShuffleSplit
     except ImportError as exc:
         raise RuntimeError("Install ML dependencies with: pip install -e .[ml]") from exc
 
     frame = pd.read_csv(csv_path)
-    missing = [column for column in FEATURE_COLUMNS + ["label"] if column not in frame.columns]
-    if missing:
-        raise ValueError(f"Training CSV is missing columns: {', '.join(missing)}")
-    if frame["label"].nunique() < 2:
-        raise ValueError("Training data must contain at least two label classes.")
+    _validate_training_frame(frame)
 
     x = frame[FEATURE_COLUMNS].fillna(0)
-    y = frame["label"]
-    x_train, x_test, y_train, y_test = train_test_split(
-        x,
-        y,
-        test_size=0.25,
-        random_state=42,
-        stratify=y,
-    )
+    y = frame["label"].astype(str).str.strip()
+    groups = frame["repo"].astype(str).str.strip()
+
+    splitter = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=42)
+    train_idx, test_idx = next(splitter.split(x, y, groups=groups))
+    x_train, x_test = x.iloc[train_idx], x.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    train_repos = sorted(groups.iloc[train_idx].unique().tolist())
+    test_repos = sorted(groups.iloc[test_idx].unique().tolist())
+
+    if set(train_repos) & set(test_repos):
+        raise RuntimeError("Repository leakage detected between train and test splits.")
+    if y_train.nunique() < 2:
+        raise ValueError(
+            "The repository-level split left the training set with fewer than two classes. "
+            "Add more labelled repositories per class."
+        )
+
     model = RandomForestClassifier(
         n_estimators=300,
         max_depth=8,
         class_weight="balanced",
         random_state=42,
+        n_jobs=-1,
     )
     model.fit(x_train, y_train)
     predictions = model.predict(x_test)
     report = classification_report(y_test, predictions, output_dict=True, zero_division=0)
+    feature_importance = {
+        feature: round(float(importance), 6)
+        for feature, importance in sorted(
+            zip(FEATURE_COLUMNS, model.feature_importances_, strict=True),
+            key=lambda item: item[1],
+            reverse=True,
+        )
+    }
 
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump({"model": model, "features": FEATURE_COLUMNS}, target)
-    return {"model_path": str(target), "test_rows": len(x_test), "report": report}
+    artifact = {
+        "model": model,
+        "features": FEATURE_COLUMNS,
+        "classes": [str(value) for value in model.classes_],
+        "training_metadata": {
+            "rows": int(len(frame)),
+            "repositories": int(groups.nunique()),
+            "train_repositories": len(train_repos),
+            "test_repositories": len(test_repos),
+            "split_strategy": "group_shuffle_by_repository",
+            "random_state": 42,
+        },
+    }
+    joblib.dump(artifact, target)
+
+    return {
+        "model_path": str(target),
+        "rows": int(len(frame)),
+        "repositories": int(groups.nunique()),
+        "train_rows": int(len(train_idx)),
+        "test_rows": int(len(test_idx)),
+        "train_repositories": len(train_repos),
+        "test_repositories": len(test_repos),
+        "classes": artifact["classes"],
+        "feature_importance": feature_importance,
+        "report": report,
+    }
 
 
 def feature_row(stats: dict) -> dict:
