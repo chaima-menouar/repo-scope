@@ -42,13 +42,21 @@ def load_assignments(path: Path, reviewer: str) -> set[str]:
     if not path.exists():
         raise FileNotFoundError(f"Review assignments not found: {path}")
     reviewer = reviewer.strip()
+    if not reviewer:
+        raise ValueError("Reviewer is required to load assignments.")
     with path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
-    return {
+    assigned = {
         (row.get("repo") or "").strip()
         for row in rows
         if (row.get("reviewer") or "").strip() == reviewer and (row.get("repo") or "").strip()
     }
+    if not assigned:
+        raise ValueError(
+            f"Reviewer {reviewer} has no repositories in {path}. "
+            "Refusing to fall back to the unassigned review queue."
+        )
+    return assigned
 
 
 def visible_evidence(row: dict[str, str]) -> dict[str, str]:
