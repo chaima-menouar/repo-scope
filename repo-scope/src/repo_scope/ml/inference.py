@@ -1,18 +1,37 @@
 """Optional inference for the experimental RepoScope risk model."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from repo_scope.config import PROJECT_ROOT
-from repo_scope.ml.training import feature_row
+from repo_scope.ml.training import EXPECTED_LABELS, feature_row
 
 LEGACY_MODEL_PATH = PROJECT_ROOT / "models" / "repo_risk.joblib"
 SCALED_MODEL_PATH = PROJECT_ROOT / "models" / "repo_risk_100k.joblib"
+SCALED_METRICS_PATH = PROJECT_ROOT / "models" / "repo_risk_100k_metrics.json"
+MIN_SCALED_CLASS_SUPPORT = 20
+
+
+def scaled_model_is_eligible(
+    model_path: Path = SCALED_MODEL_PATH,
+    metrics_path: Path = SCALED_METRICS_PATH,
+) -> bool:
+    if not model_path.exists() or not metrics_path.exists():
+        return False
+    try:
+        metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+        counts = {str(label): int(count) for label, count in metrics.get("class_counts", {}).items()}
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return False
+    if set(counts) != EXPECTED_LABELS:
+        return False
+    return min(counts.values()) >= MIN_SCALED_CLASS_SUPPORT
 
 
 def default_model_path() -> Path:
-    """Prefer the scaled training artifact once it exists, otherwise keep the verified baseline."""
-    if SCALED_MODEL_PATH.exists():
+    """Use the scaled artifact only after all three risk classes have meaningful support."""
+    if scaled_model_is_eligible():
         return SCALED_MODEL_PATH
     return LEGACY_MODEL_PATH
 
