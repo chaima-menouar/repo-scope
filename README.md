@@ -2,19 +2,20 @@
 
 > AI-assisted repository intelligence for GitHub engineering teams.
 
-RepoScope analyzes live GitHub repository signals and converts them into an explainable engineering health profile: activity, contributor concentration, issue/PR hygiene, engineering-practice signals, alerts, trends, comparisons and optional LLM-assisted recommendations.
+RepoScope analyzes live GitHub repository signals and converts them into an explainable engineering profile: activity, contributor concentration, issue/PR hygiene, Cloud/DevOps readiness, alerts, trends, comparisons, structured AI recommendations and an experimental ML maintenance-risk baseline.
 
 ## Why this project matters
 
-RepoScope is intentionally built as an end-to-end **AI + Cloud + Software Engineering** project rather than a standalone model demo. It combines data ingestion, explainable analytics, an optional AI reasoning layer, a supervised ML training path, a REST API, CLI/report interfaces, automated testing, containerization and cloud deployment.
+RepoScope is intentionally built as an end-to-end **AI + Cloud + Software Engineering** system rather than a standalone model demo. It combines live data ingestion, explainable analytics, structured AI reasoning, an evidence-traceable ML pipeline, a REST API, CLI/report interfaces, automated testing, containerization and cloud deployment paths.
 
 ### Engineering stack
 
 - **Backend:** Python, FastAPI, Pydantic
 - **Data source:** GitHub REST API with pagination, authentication, caching and rate-limit handling
-- **Analytics:** health scoring, bus factor, issue/PR hygiene, engineering-practice detection, alerts and time series
-- **AI:** deterministic local engineering summary + optional LLM analyst
-- **ML:** supervised repository-risk training pipeline for labelled repository snapshots
+- **Analytics:** health scoring, bus factor, issue/PR hygiene, alerts and time series
+- **AI:** structured risk diagnosis with evidence + optional LLM enhancement
+- **ML:** automated repository-snapshot collection, independent maintenance evidence, weak-label bootstrap, repository-group train/test split and Random Forest baseline
+- **Cloud readiness:** CI/CD, tests, Docker, infrastructure-as-code, lockfile and deployment-config detection with a 0–100 posture score
 - **Frontend:** responsive engineering intelligence dashboard with Chart.js
 - **Cloud / DevOps:** Docker, GitHub Actions, Vercel/Render support and AWS ECR + App Runner/ECS path
 - **Interfaces:** Web dashboard, REST API, CLI, JSON and standalone HTML reports
@@ -22,25 +23,26 @@ RepoScope is intentionally built as an end-to-end **AI + Cloud + Software Engine
 ## Architecture
 
 ```text
-Browser / CLI
-     |
-     v
- FastAPI / RepoProfile
-     |
-     +--> GitHub REST API --> TTL cache
-     |
-     +--> Analytics engine
-     |      |- activity & repository statistics
-     |      |- health score & bus factor
-     |      |- issue / PR hygiene
-     |      |- alerts & time series
-     |
-     +--> Explainable summary / optional LLM analyst
-     |
-     `--> Dashboard / REST API / CLI / HTML / JSON
+GitHub REST API
+      |
+      v
+Data ingestion + TTL cache
+      |
+      v
+Feature / signal extraction
+      |
+      +--> Explainable health + alerts
+      +--> Cloud / DevOps readiness
+      +--> Structured AI diagnosis --> optional LLM enhancement
+      `--> Experimental ML baseline
+             ^
+             | automated evidence-labelled snapshots
 
-Cloud delivery: Docker -> Registry -> Vercel / Render / AWS App Runner or ECS
-CI: GitHub Actions -> lint + tests
+FastAPI --> Dashboard / REST API / CLI / HTML / JSON
+
+CI/CD: GitHub Actions --> lint + tests + Docker build
+ML automation: collect --> evidence labels --> train --> metrics/model artifact
+Cloud delivery: Docker --> Registry --> Render / AWS App Runner or ECS
 ```
 
 ## Key product capabilities
@@ -50,12 +52,20 @@ CI: GitHub Actions -> lint + tests
 | Repository health | Explainable 0–100 engineering score |
 | Contributor risk | Bus-factor and ownership concentration analysis |
 | Maintenance hygiene | Issue closure and pull-request merge signals |
-| Engineering practices | CI, tests, README, license, contributing and security-policy detection |
+| Cloud readiness | Delivery posture derived from CI, tests, containers, IaC, lockfiles and deployment config |
+| Structured AI analyst | Top risks, evidence, strengths and prioritized engineering actions |
+| Optional LLM | External model enhancement without making the core product dependent on paid AI |
 | Trends | Commit velocity and issue-flow time series |
-| AI analyst | Optional LLM interpretation with deterministic fallback |
 | Comparison | Side-by-side repository benchmarking |
-| ML path | Honest supervised risk-classifier training workflow |
+| Experimental ML | Random Forest baseline with label provenance and repository-level leakage controls |
+| ML automation | GitHub Actions collection, weak-label bootstrap, model training and metrics generation |
 | Cloud delivery | Containerized, environment-configured, CI-tested service |
+
+## ML honesty and provenance
+
+RepoScope does **not** train the model from its own health score. The experimental baseline collects independent maintenance evidence such as GitHub archive status and latest-release age, records `label_source` / `label_evidence`, and skips repositories where there is not enough independent evidence to assign a conservative weak label.
+
+The resulting ML output is explicitly marked **experimental weak supervision**. It is separate from the deterministic health score and is not presented as a calibrated production probability. See [`repo-scope/docs/ML_TRAINING.md`](./repo-scope/docs/ML_TRAINING.md) for the full methodology.
 
 ## Project source
 
@@ -68,7 +78,7 @@ cd repo-scope
 python -m venv .venv
 # Windows PowerShell
 .venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
+pip install -e ".[dev,ml]"
 copy .env.example .env
 uvicorn app:app --reload
 ```
@@ -81,4 +91,4 @@ Keep `GITHUB_TOKEN`, `OPENAI_API_KEY` and other credentials in environment varia
 
 ---
 
-RepoScope is designed around **explainability over vanity metrics**: sampled GitHub signals are clearly presented as recent engineering indicators rather than claims about an exhaustive repository history.
+RepoScope is designed around **explainability over vanity metrics**: sampled GitHub signals and experimental ML outputs are clearly labelled instead of being presented as exhaustive or production-certified truth.
