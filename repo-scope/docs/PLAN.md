@@ -27,11 +27,12 @@
 - [x] Review class balance, missingness and leakage automatically
 - [x] Train/evaluate grouped Random Forest baseline
 - [x] Add grouped cross-validation, balanced accuracy and confusion matrices
+- [x] Add chronological holdout on the newest repository snapshots
+- [x] Refit the saved inference artifact on all labelled rows after isolated evaluation
 - [x] Store dataset hash, model metadata and versioned feature schema
 - [x] Fail closed on incompatible model feature schemas
 - [x] Gate scaled-model inference on minimum support for all three classes
 - [ ] Build a sufficiently large stratified human-reviewed validation subset
-- [ ] Add temporal holdout evaluation
 - [ ] Measure/calibrate probabilities before treating them as confidence
 - [ ] Compare weak-label and human-label performance separately
 - [ ] Promote scaled prediction only after the validation checklist passes
