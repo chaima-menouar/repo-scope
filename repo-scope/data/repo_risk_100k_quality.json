@@ -1,67 +1,69 @@
 {
   "catalog": {
-    "rows": 45000,
-    "active": 39969,
-    "archived": 5031,
+    "rows": 50000,
+    "active": 44954,
+    "archived": 5046,
     "languages": {
-      "Python": 6974,
-      "JavaScript": 6242,
-      "TypeScript": 4479,
-      "Rust": 2600,
-      "Go": 2555,
-      "Shell": 2431,
-      "Swift": 2381,
-      "Kotlin": 2361,
-      "C#": 2328,
-      "Java": 2297,
-      "PHP": 2182,
-      "Dart": 2170,
-      "C++": 2085,
-      "Ruby": 1952,
-      "Scala": 1230,
-      "R": 721,
+      "Python": 7476,
+      "JavaScript": 6663,
+      "TypeScript": 4982,
+      "Rust": 3033,
+      "Go": 2980,
+      "Shell": 2680,
+      "Java": 2643,
+      "Swift": 2626,
+      "Kotlin": 2609,
+      "C#": 2561,
+      "C++": 2424,
+      "PHP": 2399,
+      "Dart": 2397,
+      "Ruby": 2155,
+      "Scala": 1432,
+      "R": 928,
       "unknown": 12
     },
     "licenses": {
-      "unknown": 17730,
-      "MIT": 13821,
-      "Apache-2.0": 4724,
-      "NOASSERTION": 3226,
-      "GPL-3.0": 2586,
-      "AGPL-3.0": 1476,
-      "BSD-3-Clause": 283,
-      "GPL-2.0": 260,
-      "MPL-2.0": 193,
-      "CC0-1.0": 122,
-      "LGPL-3.0": 113,
-      "Unlicense": 97,
-      "BSD-2-Clause": 77,
-      "ISC": 53,
-      "LGPL-2.1": 44,
-      "CC-BY-4.0": 32,
-      "CC-BY-SA-4.0": 22,
-      "MIT-0": 22,
-      "0BSD": 18,
-      "EUPL-1.2": 18,
-      "EPL-2.0": 16,
-      "WTFPL": 13,
-      "OSL-3.0": 8,
-      "Zlib": 7,
-      "BSL-1.0": 6,
-      "BSD-3-Clause-Clear": 5,
+      "unknown": 18942,
+      "MIT": 15352,
+      "Apache-2.0": 5598,
+      "NOASSERTION": 3662,
+      "GPL-3.0": 3023,
+      "AGPL-3.0": 1665,
+      "BSD-3-Clause": 365,
+      "GPL-2.0": 311,
+      "MPL-2.0": 234,
+      "CC0-1.0": 147,
+      "LGPL-3.0": 141,
+      "Unlicense": 117,
+      "BSD-2-Clause": 91,
+      "ISC": 55,
+      "LGPL-2.1": 53,
+      "CC-BY-4.0": 41,
+      "CC-BY-SA-4.0": 26,
+      "EUPL-1.2": 24,
+      "MIT-0": 24,
+      "0BSD": 19,
+      "WTFPL": 18,
+      "EPL-2.0": 17,
+      "Zlib": 12,
+      "BSL-1.0": 11,
+      "OSL-3.0": 11,
+      "BSD-3-Clause-Clear": 6,
       "MulanPSL-2.0": 5,
       "CERN-OHL-S-2.0": 4,
-      "UPL-1.0": 3,
-      "AFL-3.0": 2,
-      "BlueOak-1.0.0": 2,
+      "UPL-1.0": 4,
+      "AFL-3.0": 3,
+      "BlueOak-1.0.0": 3,
+      "Artistic-2.0": 2,
       "CERN-OHL-P-2.0": 2,
       "CERN-OHL-W-2.0": 2,
       "ODbL-1.0": 2,
+      "OFL-1.1": 2,
       "PostgreSQL": 2,
-      "Artistic-2.0": 1,
       "BSD-4-Clause": 1,
-      "MS-PL": 1,
-      "OFL-1.1": 1
+      "CECILL-2.1": 1,
+      "EPL-1.0": 1,
+      "MS-PL": 1
     },
     "missingness": {
       "repo": {
@@ -70,7 +72,7 @@
       },
       "language": {
         "missing": 12,
-        "missing_pct": 0.027
+        "missing_pct": 0.024
       },
       "created_at": {
         "missing": 0,
@@ -89,28 +91,28 @@
         "missing_pct": 0.0
       },
       "license": {
-        "missing": 17730,
-        "missing_pct": 39.4
+        "missing": 18942,
+        "missing_pct": 37.884
       }
     }
   },
   "training": {
-    "rows": 692,
-    "unique_repositories": 692,
+    "rows": 697,
+    "unique_repositories": 697,
     "labels": {
-      "healthy": 464,
-      "risky": 137,
-      "watch": 91
+      "healthy": 466,
+      "risky": 138,
+      "watch": 93
     },
     "label_balance": {
-      "healthy": 0.6705,
+      "healthy": 0.6686,
       "risky": 0.198,
-      "watch": 0.1315
+      "watch": 0.1334
     },
     "label_sources": {
-      "recent_release_evidence": 464,
-      "github_archived_flag": 137,
-      "stale_release_evidence": 91
+      "recent_release_evidence": 466,
+      "github_archived_flag": 138,
+      "stale_release_evidence": 93
     },
     "feature_missingness": {
       "days_since_last_commit": {

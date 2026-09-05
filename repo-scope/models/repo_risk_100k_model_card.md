@@ -8,25 +8,25 @@ RepoScope uses this model to explore whether repository-maintenance risk can be 
 
 ## Data snapshot
 
-- Catalog target: 100000
-- Catalog repositories collected: 45000
+- Catalog target: 60000
+- Catalog repositories collected: 50000
 - Deep-profile target: 10000
-- Deep snapshots collected: 1260
-- Labelled snapshots: 692
+- Deep snapshots collected: 1267
+- Labelled snapshots: 697
 - Human-review queue: 250
 - Training repositories in latest model: 550
 
 ### Label distribution
 
-- `healthy`: 464
-- `risky`: 137
-- `watch`: 91
+- `healthy`: 466
+- `risky`: 138
+- `watch`: 93
 
 ### Label provenance
 
-- `recent_release_evidence`: 464
-- `github_archived_flag`: 137
-- `stale_release_evidence`: 91
+- `recent_release_evidence`: 466
+- `github_archived_flag`: 138
+- `stale_release_evidence`: 93
 
 Weak labels are based on independent GitHub maintenance evidence. RepoScope's deterministic health score is never used as the training target.
 
