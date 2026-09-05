@@ -1,45 +1,49 @@
 # RepoScope
 
-**Repository intelligence for GitHub engineering teams.** RepoScope transforms recent GitHub activity into an explainable repository health profile: activity, contributor concentration, issue/PR hygiene, engineering-practice signals, alerts, trends, comparisons and optional AI-assisted recommendations.
+**AI-assisted repository intelligence for GitHub engineering teams.** RepoScope transforms live GitHub signals into an explainable engineering profile: repository health, contributor concentration, maintenance hygiene, Cloud/DevOps readiness, structured AI diagnosis, trends, comparisons and an experimental ML maintenance-risk baseline.
 
-## What ships in v0.5.0
+## What ships in v0.6.0
 
 - FastAPI web application and REST API
-- Responsive dark engineering dashboard
-- GitHub REST API client with authentication, pagination, caching and rate-limit errors
+- Responsive developer-tooling dashboard
+- GitHub REST API client with authentication, pagination, caching and rate-limit handling
 - Explainable 0–100 repository health score
 - Bus-factor / contributor concentration analysis
 - Issue and pull-request hygiene metrics
 - CI, tests, README, license, contributing and security-policy detection
+- Cloud/DevOps readiness score based on CI, tests, Docker, IaC, lockfiles and deployment config
 - Monthly commit and issue time series
 - Repository comparison
+- Structured AI diagnosis with top risks, evidence, strengths and next actions
+- Optional OpenAI narrative enhancement with deterministic fallback
+- Automated repository-snapshot dataset collection in GitHub Actions
+- Conservative weak labels based on independent maintenance evidence
+- Random Forest experimental risk baseline with repository-group train/test split
+- Label provenance, feature importance and evaluation metrics
+- Optional ML inference that fails closed when the artifact/dependencies are unavailable
 - Standalone HTML and JSON reports
 - CLI package (`repo-scope owner/repo`)
-- Optional OpenAI-powered analyst with a deterministic fallback
-- Honest supervised ML training pipeline for a future repository-risk classifier
-- Pytest + Ruff CI
-- Docker, Vercel and Render deployment readiness
+- Pytest + correctness-focused Ruff CI
+- Docker runtime with ML support, plus Vercel/Render and AWS deployment paths
 
 ## Architecture
 
 ```text
-Browser / CLI
-     |
-     v
- FastAPI / RepoProfile
-     |
-     +--> GitHub REST API --> TTL JSON cache
-     |
-     +--> Analytics
-     |      |- stats
-     |      |- health score
-     |      |- bus factor
-     |      |- alerts
-     |      `- time series / comparison
-     |
-     +--> Smart summary / optional LLM analyst
-     |
-     `--> Dashboard / HTML report / JSON
+GitHub REST API
+      |
+      v
+RepoProfile / feature extraction
+      |
+      +--> Explainable health + alerts
+      +--> Cloud / DevOps readiness
+      +--> Structured AI diagnosis --> optional LLM
+      `--> Experimental ML inference
+
+FastAPI --> Dashboard / API / CLI / HTML / JSON
+
+Offline ML:
+seed repos --> snapshots --> independent evidence --> weak labels
+           --> repository-group split --> Random Forest --> model + metrics
 ```
 
 ## Local run
@@ -50,7 +54,7 @@ Requires Python 3.12+.
 python -m venv .venv
 # Windows PowerShell
 .venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
+pip install -e ".[dev,ml]"
 copy .env.example .env
 uvicorn app:app --reload
 ```
@@ -59,7 +63,7 @@ Open `http://127.0.0.1:8000` and API docs at `http://127.0.0.1:8000/docs`.
 
 ### Environment variables
 
-`GITHUB_TOKEN` is strongly recommended. Public unauthenticated GitHub REST calls have a much smaller rate limit. `OPENAI_API_KEY` is optional; without it RepoScope keeps the AI panel usable with its local explainable summary.
+`GITHUB_TOKEN` is strongly recommended. `OPENAI_API_KEY` is optional; without it RepoScope keeps the AI analyst usable through the local structured diagnosis.
 
 ```env
 GITHUB_TOKEN=github_pat_...
@@ -96,54 +100,74 @@ Example request:
 }
 ```
 
-## ML training path
+`/api/analyze` includes deterministic health analytics, Cloud/DevOps readiness and the optional `ml_risk` block. `/api/ai-insight` adds the structured engineering diagnosis and optional LLM narrative.
 
-RepoScope does **not** ship a fake pretrained classifier. The training code is ready, but a real classifier should only be trained after collecting and human-labelling repository snapshots.
+## Experimental ML pipeline
+
+RepoScope does **not** create ML labels from its own health score. GitHub Actions collects repository snapshots and independent maintenance evidence, then applies a conservative weak-label policy:
+
+- GitHub explicitly archived → `risky`
+- latest release ≤ 180 days and not archived → `healthy`
+- older release and not archived → `watch`
+- insufficient independent evidence → skipped rather than guessed
+
+Each training row records `label_source` and `label_evidence`. The model uses only these eight features:
+
+- days since last commit
+- bus factor
+- issue closure rate
+- PR merge rate
+- commits in the recent sample
+- contributors sampled
+- CI presence
+- test presence
+
+Training uses a repository-group split to prevent the same repository appearing in both train and test. The resulting class probabilities are explicitly marked **experimental weak supervision**, not calibrated production risk.
 
 ```bash
-pip install -e ".[ml]"
-python scripts/export_training_row.py fastapi/fastapi --label healthy
-python scripts/export_training_row.py some/repo --label risky
-python scripts/train_risk_model.py data/repo_risk_training.csv
+python scripts/collect_training_data.py
+python scripts/bootstrap_weak_labels.py
+python scripts/train_risk_model.py data/repo_risk_training.csv --output models/repo_risk.joblib
 ```
 
-Training features include recent activity, bus factor, issue closure, PR merge rate, active sample size, CI and test signals. See `docs/ML_TRAINING.md`.
+See `docs/ML_TRAINING.md` for the methodology and limitations.
 
 ## Deploy
 
-### Vercel
+### Vercel / lightweight runtime
 
-Push this repository to GitHub, import it in Vercel, and set `GITHUB_TOKEN` in Project Settings → Environment Variables. FastAPI is exported as `app` from the root `app.py`, so Vercel can detect it directly. Add `OPENAI_API_KEY` only if you want the LLM analyst.
+The deterministic analytics and AI fallback work without the optional ML dependencies. Configure `GITHUB_TOKEN` in environment variables, and add `OPENAI_API_KEY` only when the external LLM narrative is desired.
 
-### Docker
+### Docker / ML-enabled runtime
 
 ```bash
 docker build -t repo-scope .
 docker run --rm -p 8000:8000 -e GITHUB_TOKEN=... repo-scope
 ```
 
-For an AWS path, the same image can be pushed to ECR and run with App Runner or ECS. See `docs/AWS_DEPLOY.md`.
+The Docker image installs the ML optional dependencies and includes the generated model artifact. The same image can be pushed to AWS ECR and deployed through App Runner or ECS. See `docs/AWS_DEPLOY.md`.
 
-## Important interpretation note
+## Interpretation note
 
-RepoScope intentionally caps paginated GitHub collection to keep interactive analysis fast and respectful of rate limits. Activity, contributor, issue and pull-request metrics are therefore *recent sampled signals*, not a claim to have exhaustively downloaded the repository's entire history.
+RepoScope intentionally caps paginated GitHub collection to keep interactive analysis fast and respectful of API limits. Activity, contributor, issue and PR metrics are recent sampled signals rather than claims about an exhaustive repository history. Cloud readiness describes repository delivery signals, not proof of a secure live deployment. The ML model remains experimental until a larger independently reviewed human-labelled dataset replaces weak supervision.
 
 ## Project structure
 
 ```text
 repo-scope/
 ├── app.py
-├── public/                    # polished web dashboard
+├── public/                    # responsive engineering dashboard
+├── data/                      # seed list + generated ML snapshots
+├── models/                    # experimental model + evaluation metadata
 ├── src/repo_scope/
 │   ├── web.py                 # FastAPI application
 │   ├── profile.py             # orchestration API
 │   ├── fetch/                 # GitHub REST + cache
-│   ├── analysis/              # metrics / health / alerts / trends / compare
+│   ├── analysis/              # health / alerts / trends / cloud readiness
 │   ├── report/                # HTML + JSON reports
-│   ├── ml/                    # optional supervised training pipeline
-│   └── insights.py            # local + optional LLM analysis
-├── scripts/                   # training dataset / model helpers
+│   ├── ml/                    # labels / training / optional inference
+│   └── insights.py            # structured diagnosis + optional LLM
+├── scripts/                   # collection / labeling / training helpers
 ├── tests/
-├── docs/
-└── .github/workflows/ci.yml
+└── docs/
 ```
