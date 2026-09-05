@@ -124,7 +124,12 @@ def _collect_one(repo: str, catalog_row: dict[str, str] | None = None) -> dict:
 
 
 def _write_rows(output: Path, repositories: list[str], rows_by_repo: dict[str, dict]) -> int:
-    rows = [rows_by_repo[repo] for repo in repositories if repo in rows_by_repo]
+    """Persist all collected snapshots even when the active manifest changes."""
+    manifest_set = set(repositories)
+    ordered_repos = [repo for repo in repositories if repo in rows_by_repo]
+    ordered_repos.extend(sorted(repo for repo in rows_by_repo if repo not in manifest_set))
+    rows = [rows_by_repo[repo] for repo in ordered_repos]
+
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp")
     with temporary.open("w", newline="", encoding="utf-8") as handle:
