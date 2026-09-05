@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from scripts import collect_training_data as collector
 
 
@@ -120,3 +122,12 @@ def test_collection_passes_catalog_metadata_to_worker(tmp_path, monkeypatch):
     assert total == 1
     assert failures == []
     assert seen == [("org/a", catalog_rows["org/a"])]
+
+
+def test_batch_outcome_rejects_zero_new_rows_when_requests_failed():
+    with pytest.raises(RuntimeError, match="added 0 new snapshots"):
+        collector.validate_batch_outcome(680, 680, [("org/a", "rate limited")])
+
+
+def test_batch_outcome_allows_partial_progress_despite_some_failures():
+    collector.validate_batch_outcome(681, 680, [("org/b", "transient failure")])
