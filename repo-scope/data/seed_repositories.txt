@@ -1,5 +1,6 @@
 # Diverse public repositories used to bootstrap RepoScope's training dataset.
 # Keep one owner/repository slug per line.
+# Active / healthy projects
 psf/requests
 pallets/flask
 fastapi/fastapi
@@ -25,8 +26,23 @@ hashicorp/terraform
 hashicorp/vault
 rust-lang/rust
 tokio-rs/tokio
-deno-land/deno
 oven-sh/bun
 spring-projects/spring-boot
 elastic/elasticsearch
 grafana/grafana
+
+# Archived / maintenance-risk examples for class diversity
+atom/atom
+angular/angular.js
+minio/minio
+localstack/localstack
+FlowiseAI/Flowise
+AntonOsika/gpt-engineer
+base/chains
+
+# Smaller and mid-sized engineering projects
+pydantic/pydantic
+Textualize/rich
+encode/starlette
+pallets/click
+httpie/cli
