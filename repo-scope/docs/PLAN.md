@@ -25,6 +25,8 @@
 - [x] Complete the requested **60,000-repository catalog milestone** and stop further collection
 - [x] Accumulate **1,267 deep repository snapshots** before the 60k stop point
 - [x] Build **697 conservative weak-labelled snapshots** for experimental training
+- [x] Freeze legacy catalog/deep/dataset workflows as verification-only after the requested 60k stop point
+- [x] Preserve the explicit `stopped_at_requested_60k_catalog_milestone` progress marker
 - [x] Preserve accumulated deep snapshots when stratified manifests change
 - [x] Reject catalog/deep row regressions and duplicate repositories before committing progress
 - [x] Define an independent human labelling rubric (`healthy`, `watch`, `risky`)
@@ -36,6 +38,11 @@
 - [x] Add tests for reviewer-specific pending queues and multi-reviewer adjudication
 - [x] Add inter-reviewer reliability reporting with raw agreement and Cohen's kappa
 - [x] Add tests for reviewer overlap, disagreement and kappa reporting
+- [x] Add a dedicated human-validation workflow that performs no repository collection
+- [x] Refresh adjudication, weak-vs-human comparison, quality and readiness only from human evidence
+- [x] Gate readiness on human-review audit integrity, including duplicate/invalid decision checks
+- [x] Require at least 60 repositories with multiple independent reviewers once human comparison is otherwise ready
+- [x] Keep Cohen's kappa as an audit metric without inventing an arbitrary promotion threshold
 - [x] Document the human-review workflow and raw-vs-adjudicated ground-truth boundary
 - [x] Review class balance, missingness and leakage automatically
 - [x] Train/evaluate grouped Random Forest baseline
@@ -57,7 +64,7 @@
 
 ### Current v0.6 status
 
-Automated ML evidence and reviewer tooling are complete for the requested collection scope. Raw reviewer decisions are preserved separately from adjudicated ground truth, and inter-reviewer reliability can now be audited independently. The remaining blockers are intentionally human-governed: independent repository review at sufficient scale, production probability calibration after that validation, and an explicit promotion decision. RepoScope must not fabricate human labels or automatically promote the experimental model.
+Automated collection and ML evidence are frozen at the requested 60k scope. Reviewer tooling, independent decision storage, adjudication, reviewer-agreement auditing and readiness integrity checks are implemented. Raw reviewer decisions remain separate from adjudicated ground truth. The remaining blockers are intentionally human-governed: complete independent repository review at sufficient scale, calibrate production-facing probabilities only after that validation, and make an explicit manual promotion decision. RepoScope must not fabricate human labels, restart collection silently, or automatically promote the experimental model.
 
 ## v0.7 — durable cloud analytics
 
