@@ -12,6 +12,6 @@
   "human_weak_comparison": "data/repo_risk_human_weak_comparison.json",
   "benchmark_report": "models/repo_risk_100k_benchmark.json",
   "model_status": "experimental_weak_supervision",
-  "retrain_policy": "all_classes_min_20_first_model_at_200_then_each_500_label_milestone",
+  "retrain_policy": "final_refresh_at_stopped_60k_milestone_then_manual_only",
   "collection_status": "stopped_at_requested_60k_catalog_milestone"
 }

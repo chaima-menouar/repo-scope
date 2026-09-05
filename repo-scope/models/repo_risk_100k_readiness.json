@@ -2,8 +2,6 @@
   "promotion_status": "blocked",
   "eligible": false,
   "blocking_reasons": [
-    "class watch has fewer than 50 labelled repositories",
-    "temporal holdout has insufficient per-class test support (minimum 10; watch=3)",
     "human-reviewed validation subset is still too small"
   ],
   "policy": {
