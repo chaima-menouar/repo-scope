@@ -66,6 +66,17 @@ def test_assignment_filter_limits_reviewer_queue(tmp_path):
     assert [row["repo"] for row in pending] == ["org/a"]
 
 
+def test_assignment_loader_rejects_unknown_reviewer(tmp_path):
+    assignments = tmp_path / "assignments.csv"
+    with assignments.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["reviewer", "repo"])
+        writer.writeheader()
+        writer.writerow({"reviewer": "reviewer-a", "repo": "org/a"})
+
+    with pytest.raises(ValueError, match="no repositories"):
+        load_assignments(assignments, "reviewer-missing")
+
+
 def test_save_review_requires_provenance_and_notes(tmp_path):
     decisions = tmp_path / "decisions.csv"
 
