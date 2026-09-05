@@ -9,6 +9,7 @@ on:
       - "repo-scope/scripts/collect_repository_catalog.py"
       - "repo-scope/scripts/collect_training_data.py"
       - "repo-scope/scripts/bootstrap_weak_labels.py"
+      - "repo-scope/scripts/export_label_review_queue.py"
       - "repo-scope/scripts/train_risk_model.py"
       - "repo-scope/scripts/report_dataset_quality.py"
       - "repo-scope/src/repo_scope/ml/**"
@@ -91,6 +92,13 @@ jobs:
             --input data/repo_risk_unlabelled_100k.csv \
             --output data/repo_risk_training_100k.csv
 
+      - name: Export ambiguous snapshots for human review
+        run: |
+          python scripts/export_label_review_queue.py \
+            --input data/repo_risk_unlabelled_100k.csv \
+            --output data/repo_risk_human_review_queue.csv \
+            --limit 250
+
       - name: Generate dataset quality report
         run: |
           python scripts/report_dataset_quality.py \
@@ -144,6 +152,7 @@ jobs:
               'deep_profile_target': 10000,
               'deep_snapshots': count_csv('data/repo_risk_unlabelled_100k.csv'),
               'labelled_snapshots': count_csv('data/repo_risk_training_100k.csv'),
+              'human_review_queue': count_csv('data/repo_risk_human_review_queue.csv'),
               'label_type': 'conservative_weak_labels_with_maintenance_evidence',
               'quality_report': 'data/repo_risk_100k_quality.json',
               'model_status': 'experimental_weak_supervision',
@@ -162,6 +171,7 @@ jobs:
             data/seed_repositories_100k.txt \
             data/repo_risk_unlabelled_100k.csv \
             data/repo_risk_training_100k.csv \
+            data/repo_risk_human_review_queue.csv \
             data/repo_risk_100k_quality.json \
             data/repo_risk_100k_progress.json
           if [ -f models/repo_risk_100k.joblib ]; then git add -f models/repo_risk_100k.joblib models/repo_risk_100k_metrics.json; fi
