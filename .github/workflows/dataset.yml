@@ -10,6 +10,7 @@ on:
       - "repo-scope/scripts/train_risk_model.py"
       - "repo-scope/src/repo_scope/ml/**"
       - "repo-scope/src/repo_scope/fetch/github_api.py"
+      - "repo-scope/pyproject.toml"
       - "repo-scope/.gitignore"
       - ".github/workflows/dataset.yml"
   workflow_dispatch:
