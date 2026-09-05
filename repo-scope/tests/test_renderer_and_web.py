@@ -48,6 +48,49 @@ def test_web_shell_and_health():
     assert response.json()["version"] == "0.6.0"
 
 
+def test_human_validation_dashboard_and_status_are_available():
+    client = TestClient(app)
+    page = client.get("/validation")
+    assert page.status_code == 200
+    assert "Human Validation" in page.text
+
+    status = client.get("/api/human-validation/status")
+    assert status.status_code == 200
+    payload = status.json()
+    assert payload["queue_repositories"] >= 0
+    assert payload["raw_decisions"] >= 0
+    assert "write_enabled" in payload
+    assert "readiness" in payload
+
+
+def test_human_validation_candidate_view_hides_automation_fields():
+    client = TestClient(app)
+    response = client.get("/api/human-validation/candidates", params={"reviewer": "reviewer-test", "limit": 1})
+    assert response.status_code in {200, 409}
+    if response.status_code == 200 and response.json()["candidates"]:
+        candidate = response.json()["candidates"][0]
+        assert "review_reason" not in candidate
+        assert "weak_label" not in candidate
+        assert "predicted_label" not in candidate
+        assert "confidence" not in candidate
+        assert "health_score" not in candidate
+
+
+def test_human_review_write_is_disabled_by_default(monkeypatch):
+    monkeypatch.delenv("REPOSCOPE_HUMAN_REVIEW_WRITE_ENABLED", raising=False)
+    client = TestClient(app)
+    response = client.post(
+        "/api/human-validation/review",
+        json={
+            "repo": "org/example",
+            "reviewer": "reviewer-test",
+            "human_label": "healthy",
+            "review_notes": "Evidence-based notes for a disabled write test.",
+        },
+    )
+    assert response.status_code == 403
+
+
 def test_structured_diagnosis_is_explainable():
     diagnosis = build_structured_diagnosis(
         {
