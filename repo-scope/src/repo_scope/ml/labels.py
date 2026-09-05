@@ -1,6 +1,9 @@
 """Conservative weak-label policy for the experimental ML baseline."""
 from __future__ import annotations
 
+HEALTHY_RELEASE_MAX_DAYS = 150
+WATCH_RELEASE_MIN_DAYS = 180
+
 
 def assign_weak_label(row: dict[str, object]) -> tuple[str, str, str] | None:
     """Assign a label only when independent maintenance evidence is available."""
@@ -18,14 +21,17 @@ def assign_weak_label(row: dict[str, object]) -> tuple[str, str, str] | None:
     except ValueError:
         return None
 
-    if release_age <= 180:
+    if release_age <= HEALTHY_RELEASE_MAX_DAYS:
         return (
             "healthy",
             "recent_release_evidence",
             f"Latest GitHub release is {release_age} days old.",
         )
-    return (
-        "watch",
-        "stale_release_evidence",
-        f"Latest GitHub release is {release_age} days old; repository is not archived.",
-    )
+    if release_age >= WATCH_RELEASE_MIN_DAYS:
+        return (
+            "watch",
+            "stale_release_evidence",
+            f"Latest GitHub release is {release_age} days old; repository is not archived.",
+        )
+
+    return None
