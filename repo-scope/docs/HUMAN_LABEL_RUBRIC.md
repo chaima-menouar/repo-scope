@@ -77,6 +77,8 @@ Raw decision fields are:
 - `reviewer`
 - `reviewed_at_utc`
 
+Evidence notes and the review timestamp are mandatory integrity fields. The adjudication path rejects a raw decision if either is missing, even if the CSV was edited outside the CLI.
+
 The tool does not inspect repositories or choose labels automatically. Human evidence review is required.
 
 ## Inter-reviewer reliability
@@ -107,7 +109,11 @@ Adjudicated labels are written to:
 
 `data/repo_risk_human_labels.csv`
 
-Original decisions remain preserved in `data/repo_risk_human_review_decisions.csv`, so disagreement stays auditable.
+A machine-readable adjudication audit is written to:
+
+`data/repo_risk_human_adjudication.json`
+
+The audit records whether there are no decisions, partial adjudication, or fully adjudicated evidence, along with insufficient-review and disagreement repositories. Original decisions remain preserved in `data/repo_risk_human_review_decisions.csv`, so disagreement stays auditable.
 
 ## Evidence hierarchy
 
@@ -132,6 +138,7 @@ For validation used to judge model quality:
 - measure reviewer agreement separately from weak-vs-human agreement;
 - use raw agreement and Cohen's kappa to audit reviewer consistency;
 - route disagreements to explicit adjudication rather than silent overwrite;
+- persist adjudication status and unresolved cases as a machine-readable audit artifact;
 - stratify reviewed repositories across language, popularity, archived/active state, and maintenance cadence;
 - never treat weak-label performance alone as independent validation.
 
@@ -142,6 +149,8 @@ For validation used to judge model quality:
 `data/repo_risk_human_review_decisions.csv` contains independent raw reviewer decisions.
 
 `data/repo_risk_human_reviewer_agreement.json` audits inter-reviewer reliability and is not ground truth.
+
+`data/repo_risk_human_adjudication.json` records adjudication state and unresolved cases; it is an audit artifact, not a label source.
 
 `data/repo_risk_human_labels.csv` contains only adjudicated durable labels eligible to enter the combined training/validation path.
 
