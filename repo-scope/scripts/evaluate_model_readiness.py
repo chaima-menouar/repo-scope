@@ -20,7 +20,13 @@ def _number(value, default: float = 0.0) -> float:
         return default
 
 
-def evaluate(progress: dict, quality: dict, metrics: dict, human_comparison: dict) -> dict:
+def evaluate(
+    progress: dict,
+    quality: dict,
+    metrics: dict,
+    human_comparison: dict,
+    reviewer_agreement: dict | None = None,
+) -> dict:
     reasons: list[str] = []
     class_counts = metrics.get("class_counts", {})
     cv = metrics.get("cross_validation", {})
@@ -60,9 +66,8 @@ def evaluate(progress: dict, quality: dict, metrics: dict, human_comparison: dic
                 "temporal holdout has insufficient per-class test support "
                 f"(minimum {temporal_min_class_support}; {details})"
             )
-        else:
-            if _number(temporal.get("macro_f1")) < 0.60:
-                reasons.append("temporal holdout macro F1 is below 0.60")
+        elif _number(temporal.get("macro_f1")) < 0.60:
+            reasons.append("temporal holdout macro F1 is below 0.60")
         if temporal.get("missing_test_classes"):
             reasons.append("temporal holdout does not contain all three risk classes")
 
@@ -85,10 +90,25 @@ def evaluate(progress: dict, quality: dict, metrics: dict, human_comparison: dic
                         f"failure slice {dimension}/{slice_row.get('slice')} has accuracy below 0.50 with n={count}"
                     )
 
-    if human_comparison.get("status") != "ready_for_comparison":
+    human_ready = human_comparison.get("status") == "ready_for_comparison"
+    if not human_ready:
         reasons.append("human-reviewed validation subset is still too small")
     elif _number(human_comparison.get("agreement_rate")) < 0.70:
         reasons.append("weak-label agreement with human review is below 0.70")
+
+    reviewer_overlap_min = 60
+    if reviewer_agreement is not None:
+        if reviewer_agreement.get("duplicate_reviewer_repo_decisions"):
+            reasons.append("human-review audit contains duplicate reviewer/repository decisions")
+        if reviewer_agreement.get("invalid_labels"):
+            reasons.append("human-review audit contains invalid labels")
+        if human_ready:
+            if reviewer_agreement.get("status") != "ready_for_inter_reviewer_analysis":
+                reasons.append("inter-reviewer agreement audit is not ready")
+            if int(reviewer_agreement.get("repositories_with_multiple_reviewers", 0) or 0) < reviewer_overlap_min:
+                reasons.append(
+                    f"fewer than {reviewer_overlap_min} repositories have multiple independent reviewers"
+                )
 
     warnings = quality.get("warnings") or []
     if warnings:
@@ -113,10 +133,12 @@ def evaluate(progress: dict, quality: dict, metrics: dict, human_comparison: dic
             "human_overlap_min": 60,
             "human_each_class_min": 10,
             "weak_human_agreement_min": 0.70,
+            "multi_reviewer_repository_min": reviewer_overlap_min,
+            "inter_reviewer_kappa": "reported_for_audit_no_hard_threshold",
         },
         "note": (
-            "Eligible means the automated evidence is strong enough for a manual promotion decision. "
-            "It never automatically converts the experimental model into a production risk score."
+            "Eligible means the automated and human-evidence integrity gates are strong enough for a manual "
+            "promotion decision. It never automatically converts the experimental model into a production risk score."
         ),
     }
 
@@ -127,6 +149,7 @@ def main() -> None:
     parser.add_argument("--quality", default="data/repo_risk_100k_quality.json")
     parser.add_argument("--metrics", default="models/repo_risk_100k_metrics.json")
     parser.add_argument("--human-comparison", default="data/repo_risk_human_weak_comparison.json")
+    parser.add_argument("--reviewer-agreement", default="data/repo_risk_human_reviewer_agreement.json")
     parser.add_argument("--output", default="models/repo_risk_100k_readiness.json")
     args = parser.parse_args()
     report = evaluate(
@@ -134,6 +157,7 @@ def main() -> None:
         _load(Path(args.quality)),
         _load(Path(args.metrics)),
         _load(Path(args.human_comparison)),
+        _load(Path(args.reviewer_agreement)),
     )
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
