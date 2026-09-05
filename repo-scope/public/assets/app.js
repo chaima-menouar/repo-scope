@@ -20,9 +20,10 @@ async function api(path, body){
 function showError(message){ const box=$('#error-box'); box.textContent=message; setHidden(box,false); }
 function clearError(){ setHidden($('#error-box'),true); }
 
-function renderSignals(signals){
-  const labels={has_ci:'CI/CD',has_tests:'Automated tests',has_license:'License',has_contributing:'Contributing guide',has_readme:'README',has_security_policy:'Security policy'};
-  $('#signals').innerHTML=Object.entries(labels).map(([key,label])=>`<div class="signal ${signals[key]?'yes':'no'}">${signals[key]?'●':'○'} ${label}<br><small>${signals[key]?'detected':'not detected'}</small></div>`).join('');
+function renderSignals(signals, cloud){
+  const labels={has_ci:'CI/CD',has_tests:'Automated tests',has_license:'License',has_contributing:'Contributing guide',has_readme:'README',has_security_policy:'Security policy',has_docker:'Container definition',has_iac:'Infrastructure as code',has_lockfile:'Dependency lockfile',has_deploy_config:'Deployment config'};
+  const banner=cloud?`<div class="cloud-readiness-banner"><div><small>CLOUD / DEVOPS READINESS</small><strong>${escapeHtml(cloud.score)}/100</strong></div><span>${escapeHtml(cloud.posture)}</span></div>`:'';
+  $('#signals').innerHTML=banner+Object.entries(labels).map(([key,label])=>`<div class="signal ${signals[key]?'yes':'no'}">${signals[key]?'●':'○'} ${label}<br><small>${signals[key]?'detected':'not detected'}</small></div>`).join('');
 }
 
 function renderAlerts(alerts){
@@ -84,7 +85,7 @@ function renderDashboard(data){
   $('#issue-closure').textContent=pct(s.issues.closure_rate_pct); $('#issue-sample').textContent=`${fmt(s.issues.sampled_total)} sampled issues`;
   $('#pr-merge').textContent=pct(s.pull_requests.merge_rate_pct); $('#pr-sample').textContent=`${fmt(s.pull_requests.sampled_total)} sampled PRs`;
   $('#smart-summary').textContent=data.smart_summary;
-  renderSignals(s.signals); renderAlerts(data.alerts); renderCharts(data);
+  renderSignals(s.signals,s.cloud_readiness); renderAlerts(data.alerts); renderCharts(data);
   setHidden($('#dashboard'),false); setHidden($('#ai-result'),true);
 }
 
