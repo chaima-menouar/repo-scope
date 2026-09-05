@@ -3,9 +3,15 @@ name: Dataset bootstrap
 on:
   push:
     branches: [improve/portfolio-ai-cloud]
-    paths-ignore:
-      - "repo-scope/data/repo_risk_unlabelled.csv"
+    paths:
+      - "repo-scope/data/seed_repositories.txt"
+      - "repo-scope/scripts/collect_training_data.py"
+      - ".github/workflows/dataset.yml"
   workflow_dispatch:
+
+concurrency:
+  group: reposcope-dataset-bootstrap
+  cancel-in-progress: true
 
 permissions:
   contents: write
