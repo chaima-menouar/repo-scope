@@ -1,309 +1,34 @@
-name: Dataset and ML baseline
+name: Dataset and ML baseline (frozen)
 
 on:
-  push:
-    branches: [improve/portfolio-ai-cloud]
-    paths:
-      - ".github/dataset-trigger.txt"
-      - "repo-scope/data/seed_repositories.txt"
-      - "repo-scope/data/repo_risk_human_labels.csv"
-      - "repo-scope/scripts/discover_seed_repositories.py"
-      - "repo-scope/scripts/collect_repository_catalog.py"
-      - "repo-scope/scripts/build_deep_manifest.py"
-      - "repo-scope/scripts/collect_training_data.py"
-      - "repo-scope/scripts/validate_dataset_progress.py"
-      - "repo-scope/scripts/bootstrap_weak_labels.py"
-      - "repo-scope/scripts/export_label_review_queue.py"
-      - "repo-scope/scripts/merge_human_labels.py"
-      - "repo-scope/scripts/compare_human_weak_labels.py"
-      - "repo-scope/scripts/benchmark_risk_models.py"
-      - "repo-scope/scripts/evaluate_model_readiness.py"
-      - "repo-scope/scripts/train_risk_model.py"
-      - "repo-scope/scripts/report_dataset_quality.py"
-      - "repo-scope/scripts/generate_model_card.py"
-      - "repo-scope/src/repo_scope/ml/**"
-      - "repo-scope/src/repo_scope/fetch/github_api.py"
-      - "repo-scope/pyproject.toml"
-      - "repo-scope/.gitignore"
-      - ".github/workflows/dataset.yml"
   workflow_dispatch:
 
-concurrency:
-  group: reposcope-dataset-writer-v1
-  cancel-in-progress: false
-
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  collect-and-train:
+  collection-frozen:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
-    defaults:
-      run:
-        working-directory: repo-scope
     steps:
       - uses: actions/checkout@v4
         with:
           ref: improve/portfolio-ai-cloud
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: repo-scope/pyproject.toml
-      - name: Install RepoScope with ML dependencies
-        run: pip install -e ".[ml]"
 
-      - name: Build or advance 60k repository catalog
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python scripts/collect_repository_catalog.py \
-            --target 60000 \
-            --output data/repository_catalog_100k.csv \
-            --state data/repository_catalog_100k.state.json \
-            --max-new 5000
-
-      - name: Derive stratified deep-analysis manifest from catalog
-        run: |
-          WATCH=$(python - <<'PY'
-          import csv
-          from pathlib import Path
-          path = Path('data/repo_risk_training_combined_100k.csv')
-          if not path.exists():
-              print(0)
-          else:
-              with path.open(encoding='utf-8', newline='') as handle:
-                  print(sum(1 for row in csv.DictReader(handle) if (row.get('label') or '').strip() == 'watch'))
-          PY
-          )
-          if [ "$WATCH" -lt 20 ]; then
-            echo "watch support is $WATCH; using targeted stale-active sampling"
-            ARCHIVED_FRACTION=0.10
-            STALE_FRACTION=0.75
-            STALE_DAYS=180
-          else
-            ARCHIVED_FRACTION=0.20
-            STALE_FRACTION=0.35
-            STALE_DAYS=365
-          fi
-          python scripts/build_deep_manifest.py \
-            --catalog data/repository_catalog_100k.csv \
-            --output data/seed_repositories_100k.txt \
-            --target 10000 \
-            --archived-fraction "$ARCHIVED_FRACTION" \
-            --stale-active-fraction "$STALE_FRACTION" \
-            --stale-after-days "$STALE_DAYS"
-
-      - name: Collect next deep repository batch
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_MAX_PAGES: "1"
-        run: |
-          CATALOG_ROWS=$(python - <<'PY'
-          import csv
-          from pathlib import Path
-          p=Path('data/repository_catalog_100k.csv')
-          print(sum(1 for _ in csv.DictReader(p.open(encoding='utf-8'))) if p.exists() else 0)
-          PY
-          )
-          if [ "$CATALOG_ROWS" -ge 60000 ]; then
-            echo "Catalog reached $CATALOG_ROWS; stopping deep collection at the 60k milestone"
-          else
-            python scripts/collect_training_data.py \
-              --repos data/seed_repositories_100k.txt \
-              --catalog data/repository_catalog_100k.csv \
-              --output data/repo_risk_unlabelled_100k.csv \
-              --workers 6 \
-              --resume \
-              --limit 130 \
-              --checkpoint-every 25
-          fi
-
-      - name: Reject dataset regressions
-        run: |
-          python scripts/validate_dataset_progress.py \
-            --progress data/repo_risk_100k_progress.json \
-            --catalog data/repository_catalog_100k.csv \
-            --deep data/repo_risk_unlabelled_100k.csv
-
-      - name: Build conservative weak labels
-        run: |
-          python scripts/bootstrap_weak_labels.py \
-            --input data/repo_risk_unlabelled_100k.csv \
-            --output data/repo_risk_training_100k.csv
-
-      - name: Export ambiguous snapshots for human review
-        run: |
-          python scripts/export_label_review_queue.py \
-            --input data/repo_risk_unlabelled_100k.csv \
-            --output data/repo_risk_human_review_queue.csv \
-            --limit 250
-
-      - name: Merge durable human labels
-        run: |
-          python scripts/merge_human_labels.py \
-            --unlabelled data/repo_risk_unlabelled_100k.csv \
-            --weak data/repo_risk_training_100k.csv \
-            --human data/repo_risk_human_labels.csv \
-            --output data/repo_risk_training_combined_100k.csv
-
-      - name: Compare weak labels with human review
-        run: |
-          python scripts/compare_human_weak_labels.py \
-            --weak data/repo_risk_training_100k.csv \
-            --human data/repo_risk_human_labels.csv \
-            --output data/repo_risk_human_weak_comparison.json
-
-      - name: Generate dataset quality report
-        run: |
-          python scripts/report_dataset_quality.py \
-            --catalog data/repository_catalog_100k.csv \
-            --training data/repo_risk_training_combined_100k.csv \
-            --output data/repo_risk_100k_quality.json
-
-      - name: Benchmark grouped model baselines when classes are ready
-        run: |
-          read HEALTHY WATCH RISKY <<EOF
-          $(python - <<'PY'
-          import csv
-          from collections import Counter
-          from pathlib import Path
-          path = Path('data/repo_risk_training_combined_100k.csv')
-          rows = list(csv.DictReader(path.open(encoding='utf-8'))) if path.exists() else []
-          counts = Counter((row.get('label') or '').strip() for row in rows)
-          print(counts.get('healthy', 0), counts.get('watch', 0), counts.get('risky', 0))
-          PY
-          )
-          EOF
-          if [ "$HEALTHY" -ge 10 ] && [ "$WATCH" -ge 10 ] && [ "$RISKY" -ge 10 ]; then
-            python scripts/benchmark_risk_models.py \
-              data/repo_risk_training_combined_100k.csv \
-              --output models/repo_risk_100k_benchmark.json
-          else
-            echo "Skipping grouped benchmark until each class has at least 10 repositories"
-          fi
-
-      - name: Train experimental risk baseline at meaningful milestones
-        run: |
-          read ROWS PREVIOUS HEALTHY WATCH RISKY <<EOF
-          $(python - <<'PY'
-          import csv, json
-          from collections import Counter
-          from pathlib import Path
-          training = Path('data/repo_risk_training_combined_100k.csv')
-          rows_data = list(csv.DictReader(training.open(encoding='utf-8'))) if training.exists() else []
-          rows = len(rows_data)
-          counts = Counter((row.get('label') or '').strip() for row in rows_data)
-          progress = Path('data/repo_risk_100k_progress.json')
-          previous = 0
-          if progress.exists():
-              try:
-                  previous = int(json.loads(progress.read_text(encoding='utf-8')).get('labelled_snapshots', 0))
-              except (ValueError, TypeError, json.JSONDecodeError):
-                  previous = 0
-          print(rows, previous, counts.get('healthy', 0), counts.get('watch', 0), counts.get('risky', 0))
-          PY
-          )
-          EOF
-          echo "Labelled rows: $ROWS; healthy=$HEALTHY watch=$WATCH risky=$RISKY; previous=$PREVIOUS"
-          SHOULD_TRAIN=0
-          CLASS_READY=0
-          if [ "$HEALTHY" -ge 20 ] && [ "$WATCH" -ge 20 ] && [ "$RISKY" -ge 20 ]; then
-            CLASS_READY=1
-          fi
-          if [ "$CLASS_READY" -eq 1 ] && [ "$ROWS" -ge 200 ] && [ ! -f models/repo_risk_100k.joblib ]; then
-            SHOULD_TRAIN=1
-          elif [ "$CLASS_READY" -eq 1 ] && [ "$ROWS" -ge 500 ] && [ $((ROWS / 500)) -gt $((PREVIOUS / 500)) ]; then
-            SHOULD_TRAIN=1
-          fi
-          if [ "$SHOULD_TRAIN" -eq 1 ]; then
-            mkdir -p models
-            python scripts/train_risk_model.py data/repo_risk_training_combined_100k.csv --output models/repo_risk_100k.joblib > models/repo_risk_100k_metrics.json
-          elif [ "$CLASS_READY" -eq 0 ]; then
-            echo "Skipping scaled training until healthy/watch/risky each have at least 20 repositories"
-          else
-            echo "Skipping model refresh until the next 500-label milestone"
-          fi
-
-      - name: Write dataset progress summary
+      - name: Confirm collection freeze
+        working-directory: repo-scope
         run: |
           python - <<'PY'
-          import csv, json
+          import json
           from pathlib import Path
 
-          def count_csv(path):
-              p = Path(path)
-              if not p.exists():
-                  return 0
-              with p.open(encoding='utf-8', newline='') as f:
-                  return sum(1 for _ in csv.DictReader(f))
-
-          payload = {
-              'catalog_target': 60000,
-              'catalog_repositories': count_csv('data/repository_catalog_100k.csv'),
-              'deep_profile_target': 10000,
-              'deep_snapshots': count_csv('data/repo_risk_unlabelled_100k.csv'),
-              'labelled_snapshots': count_csv('data/repo_risk_training_combined_100k.csv'),
-              'weak_labelled_snapshots': count_csv('data/repo_risk_training_100k.csv'),
-              'human_reviewed_snapshots': count_csv('data/repo_risk_human_labels.csv'),
-              'human_review_queue': count_csv('data/repo_risk_human_review_queue.csv'),
-              'label_type': 'weak_labels_plus_optional_durable_human_review',
-              'quality_report': 'data/repo_risk_100k_quality.json',
-              'human_weak_comparison': 'data/repo_risk_human_weak_comparison.json',
-              'benchmark_report': 'models/repo_risk_100k_benchmark.json',
-              'model_status': 'experimental_weak_supervision',
-              'retrain_policy': 'all_classes_min_20_first_model_at_200_then_each_500_label_milestone',
-          }
-          Path('data/repo_risk_100k_progress.json').write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
-          print(payload)
+          path = Path('data/repo_risk_100k_progress.json')
+          payload = json.loads(path.read_text(encoding='utf-8'))
+          catalog = int(payload.get('catalog_repositories', 0) or 0)
+          status = payload.get('collection_status')
+          if catalog != 60000:
+              raise SystemExit(f'Unexpected catalog size while frozen: {catalog}')
+          if status != 'stopped_at_requested_60k_catalog_milestone':
+              raise SystemExit(f'Unexpected collection status while frozen: {status}')
+          print('RepoScope collection is intentionally frozen at 60,000 repositories.')
+          print('This archived workflow performs no collection or training writes.')
           PY
-
-      - name: Generate model card when model metrics exist
-        run: |
-          if [ -f models/repo_risk_100k_metrics.json ]; then
-            python scripts/generate_model_card.py \
-              --progress data/repo_risk_100k_progress.json \
-              --quality data/repo_risk_100k_quality.json \
-              --metrics models/repo_risk_100k_metrics.json \
-              --output models/repo_risk_100k_model_card.md
-          else
-            echo "No eligible scaled model metrics yet; model card will be generated at the first training milestone"
-          fi
-
-      - name: Evaluate scaled-model promotion readiness
-        run: |
-          python scripts/evaluate_model_readiness.py \
-            --progress data/repo_risk_100k_progress.json \
-            --quality data/repo_risk_100k_quality.json \
-            --metrics models/repo_risk_100k_metrics.json \
-            --human-comparison data/repo_risk_human_weak_comparison.json \
-            --output models/repo_risk_100k_readiness.json
-
-      - name: Commit dataset progress
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f \
-            data/repository_catalog_100k.csv \
-            data/repository_catalog_100k.state.json \
-            data/seed_repositories_100k.txt \
-            data/repo_risk_unlabelled_100k.csv \
-            data/repo_risk_training_100k.csv \
-            data/repo_risk_training_combined_100k.csv \
-            data/repo_risk_human_review_queue.csv \
-            data/repo_risk_human_labels.csv \
-            data/repo_risk_human_weak_comparison.json \
-            data/repo_risk_100k_quality.json \
-            data/repo_risk_100k_progress.json \
-            models/repo_risk_100k_readiness.json
-          if [ -f models/repo_risk_100k_benchmark.json ]; then git add -f models/repo_risk_100k_benchmark.json; fi
-          if [ -f models/repo_risk_100k.joblib ]; then git add -f models/repo_risk_100k.joblib models/repo_risk_100k_metrics.json; fi
-          if [ -f models/repo_risk_100k_model_card.md ]; then git add -f models/repo_risk_100k_model_card.md; fi
-          if git diff --cached --quiet; then
-            echo "Dataset progress unchanged"
-            exit 0
-          fi
-          git commit -m "ml: advance 60k catalog and dataset [skip ci]"
-          git pull --rebase origin improve/portfolio-ai-cloud
-          git push origin HEAD:improve/portfolio-ai-cloud
