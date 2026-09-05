@@ -65,22 +65,26 @@ jobs:
             --catalog data/repository_catalog_100k.csv \
             --output data/seed_repositories_100k.txt \
             --target 10000 \
-            --archived-fraction 0.20
+            --archived-fraction 0.20 \
+            --stale-active-fraction 0.35 \
+            --stale-after-days 365
 
       - name: Collect next deep repository batch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_MAX_PAGES: "1"
         run: |
-          # RepoProfile uses roughly eight REST requests per deep snapshot. The
-          # built-in Actions GITHUB_TOKEN is limited to 1,000 requests/hour per
-          # repository, so keep a safety margin for retries and workflow work.
+          # The ML collector reuses catalog metadata and omits the languages API
+          # call, reducing deep collection to roughly six core REST requests per
+          # repository. A 130-repository batch keeps a margin below the built-in
+          # Actions token's core API budget while improving throughput.
           python scripts/collect_training_data.py \
             --repos data/seed_repositories_100k.txt \
+            --catalog data/repository_catalog_100k.csv \
             --output data/repo_risk_unlabelled_100k.csv \
-            --workers 4 \
+            --workers 6 \
             --resume \
-            --limit 100 \
+            --limit 130 \
             --checkpoint-every 25
 
       - name: Build conservative weak labels
