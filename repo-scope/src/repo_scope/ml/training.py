@@ -32,13 +32,27 @@ def _validate_training_frame(frame) -> None:
         raise ValueError("Training data must contain at least four distinct repositories.")
 
 
+def _model():
+    try:
+        from sklearn.ensemble import RandomForestClassifier
+    except ImportError as exc:
+        raise RuntimeError("Install ML dependencies with: pip install -e .[ml]") from exc
+
+    return RandomForestClassifier(
+        n_estimators=300,
+        max_depth=8,
+        class_weight="balanced",
+        random_state=42,
+        n_jobs=-1,
+    )
+
+
 def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") -> dict:
     try:
         import joblib
         import pandas as pd
-        from sklearn.ensemble import RandomForestClassifier
-        from sklearn.metrics import classification_report
-        from sklearn.model_selection import GroupShuffleSplit
+        from sklearn.metrics import accuracy_score, classification_report, f1_score
+        from sklearn.model_selection import GroupShuffleSplit, StratifiedGroupKFold, cross_val_predict
     except ImportError as exc:
         raise RuntimeError("Install ML dependencies with: pip install -e .[ml]") from exc
 
@@ -48,6 +62,32 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
     x = frame[FEATURE_COLUMNS].fillna(0)
     y = frame["label"].astype(str).str.strip()
     groups = frame["repo"].astype(str).str.strip()
+    class_counts = {str(label): int(count) for label, count in y.value_counts().sort_index().items()}
+
+    min_class_count = min(class_counts.values())
+    cv_folds = min(5, min_class_count)
+    if cv_folds < 2:
+        raise ValueError("Each class needs at least two repositories for grouped cross-validation.")
+
+    cv = StratifiedGroupKFold(n_splits=cv_folds, shuffle=True, random_state=42)
+    cv_predictions = cross_val_predict(_model(), x, y, groups=groups, cv=cv, n_jobs=-1)
+    cv_report = classification_report(y, cv_predictions, output_dict=True, zero_division=0)
+    cv_accuracy = float(accuracy_score(y, cv_predictions))
+    cv_macro_f1 = float(f1_score(y, cv_predictions, average="macro", zero_division=0))
+
+    warning_reasons = []
+    if len(frame) < 100:
+        warning_reasons.append("fewer than 100 labelled repository snapshots")
+    if min_class_count < 20:
+        warning_reasons.append("at least one class has fewer than 20 repositories")
+    if cv_accuracy >= 0.99:
+        warning_reasons.append("cross-validation accuracy is unusually high for a small weakly-labelled dataset")
+    evaluation_warning = None
+    if warning_reasons:
+        evaluation_warning = (
+            "Small weakly-labelled dataset; metrics may be optimistic and must not be treated as production "
+            "performance. Signals: " + "; ".join(warning_reasons) + "."
+        )
 
     splitter = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=42)
     train_idx, test_idx = next(splitter.split(x, y, groups=groups))
@@ -64,16 +104,10 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
             "Add more labelled repositories per class."
         )
 
-    model = RandomForestClassifier(
-        n_estimators=300,
-        max_depth=8,
-        class_weight="balanced",
-        random_state=42,
-        n_jobs=-1,
-    )
+    model = _model()
     model.fit(x_train, y_train)
     predictions = model.predict(x_test)
-    report = classification_report(y_test, predictions, output_dict=True, zero_division=0)
+    heldout_report = classification_report(y_test, predictions, output_dict=True, zero_division=0)
     feature_importance = {
         feature: round(float(importance), 6)
         for feature, importance in sorted(
@@ -98,9 +132,13 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
             "train_repositories": len(train_repos),
             "test_repositories": len(test_repos),
             "split_strategy": "group_shuffle_by_repository",
+            "cross_validation_strategy": "stratified_group_k_fold",
+            "cross_validation_folds": cv_folds,
             "random_state": 42,
+            "class_counts": class_counts,
             "label_sources": label_sources,
             "model_status": "experimental_weak_supervision" if label_sources else "supervised",
+            "evaluation_warning": evaluation_warning,
         },
     }
     joblib.dump(artifact, target)
@@ -114,9 +152,18 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         "train_repositories": len(train_repos),
         "test_repositories": len(test_repos),
         "classes": artifact["classes"],
+        "class_counts": class_counts,
         "label_sources": label_sources,
         "feature_importance": feature_importance,
-        "report": report,
+        "cross_validation": {
+            "strategy": "stratified_group_k_fold",
+            "folds": cv_folds,
+            "accuracy": round(cv_accuracy, 6),
+            "macro_f1": round(cv_macro_f1, 6),
+            "report": cv_report,
+        },
+        "heldout_report": heldout_report,
+        "evaluation_warning": evaluation_warning,
     }
 
 
