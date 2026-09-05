@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+from collections import defaultdict, deque
 from pathlib import Path
 
 from repo_scope.ml.labels import assign_weak_label
@@ -9,6 +10,10 @@ from repo_scope.ml.labels import assign_weak_label
 REVIEW_COLUMNS = [
     "repo",
     "snapshot_at_utc",
+    "language",
+    "stars",
+    "size_kb",
+    "catalog_pushed_at",
     "archived",
     "latest_release_age_days",
     "latest_release_at",
@@ -31,6 +36,47 @@ def _reason(row: dict[str, str]) -> str:
     return "insufficient_independent_evidence"
 
 
+def _star_bucket(value: str) -> str:
+    try:
+        stars = int(float(value or 0))
+    except ValueError:
+        return "unknown"
+    if stars <= 25:
+        return "0-25"
+    if stars <= 100:
+        return "26-100"
+    if stars <= 500:
+        return "101-500"
+    if stars <= 2000:
+        return "501-2000"
+    return "2001+"
+
+
+def _stratified_select(candidates: list[dict[str, str]], limit: int) -> list[dict[str, str]]:
+    """Round-robin ambiguous cases across reason, language and popularity strata."""
+    groups: dict[tuple[str, str, str], deque[dict[str, str]]] = defaultdict(deque)
+    for row in sorted(candidates, key=lambda item: item["repo"]):
+        key = (
+            row["review_reason"],
+            row.get("language") or "unknown",
+            _star_bucket(row.get("stars") or ""),
+        )
+        groups[key].append(row)
+
+    keys = sorted(groups)
+    selected: list[dict[str, str]] = []
+    while keys and len(selected) < max(0, limit):
+        next_keys: list[tuple[str, str, str]] = []
+        for key in keys:
+            bucket = groups[key]
+            if bucket and len(selected) < limit:
+                selected.append(bucket.popleft())
+            if bucket:
+                next_keys.append(key)
+        keys = next_keys
+    return selected
+
+
 def build_review_queue(source: Path, output: Path, limit: int = 250) -> dict[str, int]:
     if not source.exists() or source.stat().st_size == 0:
         raise ValueError(f"Source dataset does not exist or is empty: {source}")
@@ -49,6 +95,10 @@ def build_review_queue(source: Path, output: Path, limit: int = 250) -> dict[str
             {
                 "repo": repo,
                 "snapshot_at_utc": row.get("snapshot_at_utc", ""),
+                "language": row.get("language", ""),
+                "stars": row.get("stars", ""),
+                "size_kb": row.get("size_kb", ""),
+                "catalog_pushed_at": row.get("catalog_pushed_at", ""),
                 "archived": row.get("archived", ""),
                 "latest_release_age_days": row.get("latest_release_age_days", ""),
                 "latest_release_at": row.get("latest_release_at", ""),
@@ -58,14 +108,7 @@ def build_review_queue(source: Path, output: Path, limit: int = 250) -> dict[str
             }
         )
 
-    reason_priority = {
-        "ambiguous_release_boundary": 0,
-        "missing_release_evidence": 1,
-        "invalid_release_evidence": 2,
-        "insufficient_independent_evidence": 3,
-    }
-    candidates.sort(key=lambda row: (reason_priority.get(row["review_reason"], 99), row["repo"]))
-    selected = candidates[: max(0, limit)]
+    selected = _stratified_select(candidates, limit)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf-8", newline="") as handle:
@@ -81,7 +124,7 @@ def build_review_queue(source: Path, output: Path, limit: int = 250) -> dict[str
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Export ambiguous RepoScope snapshots for human label review.")
+    parser = argparse.ArgumentParser(description="Export a stratified ambiguous RepoScope queue for human label review.")
     parser.add_argument("--input", default="data/repo_risk_unlabelled_100k.csv")
     parser.add_argument("--output", default="data/repo_risk_human_review_queue.csv")
     parser.add_argument("--limit", type=int, default=250)
