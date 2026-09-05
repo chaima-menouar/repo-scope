@@ -34,6 +34,8 @@
 - [x] Add strict-majority adjudication that keeps ties/disagreements out of durable ground truth
 - [x] Add tests that prevent automation fields from leaking into the reviewer evidence view
 - [x] Add tests for reviewer-specific pending queues and multi-reviewer adjudication
+- [x] Add inter-reviewer reliability reporting with raw agreement and Cohen's kappa
+- [x] Add tests for reviewer overlap, disagreement and kappa reporting
 - [x] Document the human-review workflow and raw-vs-adjudicated ground-truth boundary
 - [x] Review class balance, missingness and leakage automatically
 - [x] Train/evaluate grouped Random Forest baseline
@@ -55,7 +57,7 @@
 
 ### Current v0.6 status
 
-Automated ML evidence and reviewer tooling are complete for the requested collection scope. Raw reviewer decisions are preserved separately from adjudicated ground truth. The remaining blockers are intentionally human-governed: independent repository review at sufficient scale, production probability calibration after that validation, and an explicit promotion decision. RepoScope must not fabricate human labels or automatically promote the experimental model.
+Automated ML evidence and reviewer tooling are complete for the requested collection scope. Raw reviewer decisions are preserved separately from adjudicated ground truth, and inter-reviewer reliability can now be audited independently. The remaining blockers are intentionally human-governed: independent repository review at sufficient scale, production probability calibration after that validation, and an explicit promotion decision. RepoScope must not fabricate human labels or automatically promote the experimental model.
 
 ## v0.7 — durable cloud analytics
 
