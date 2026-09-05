@@ -191,7 +191,17 @@ def main() -> None:
     parser.add_argument("--resume", action="store_true", help="Keep existing rows and collect only missing repositories.")
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of new repositories to collect this run.")
     parser.add_argument("--checkpoint-every", type=int, default=25, help="Persist partial progress after this many successful repositories.")
+    parser.add_argument(
+        "--rate-limit-wait-max-seconds",
+        type=int,
+        default=900,
+        help="Maximum time to wait for a near-term GitHub rate-limit reset (default: 900s).",
+    )
     args = parser.parse_args()
+
+    # This script is a batch collector, not an interactive request path. It can
+    # safely wait through a near-term reset instead of discarding an entire batch.
+    github_api.GITHUB_RATE_LIMIT_WAIT_MAX_SECONDS = max(0, args.rate_limit_wait_max_seconds)
 
     repositories = load_repositories(Path(args.repos))
     catalog_rows = load_catalog(Path(args.catalog)) if args.catalog else {}
