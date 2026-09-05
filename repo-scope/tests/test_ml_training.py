@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 
 import joblib
 
@@ -38,17 +39,26 @@ def test_training_uses_repository_level_split_and_saves_metadata(tmp_path):
     csv_path = tmp_path / "training.csv"
     model_path = tmp_path / "model.joblib"
     _write_training_csv(csv_path)
+    expected_hash = hashlib.sha256(csv_path.read_bytes()).hexdigest()
 
     result = train_from_csv(str(csv_path), str(model_path))
 
     assert result["repositories"] == 12
     assert result["train_repositories"] + result["test_repositories"] == 12
     assert set(result["feature_importance"]) == set(FEATURE_COLUMNS)
+    assert result["dataset_sha256"] == expected_hash
+    assert result["trained_at_utc"]
+    assert result["model_type"] == "RandomForestClassifier"
+    assert result["scikit_learn_version"]
     assert model_path.exists()
 
     artifact = joblib.load(model_path)
+    metadata = artifact["training_metadata"]
     assert artifact["features"] == FEATURE_COLUMNS
-    assert artifact["training_metadata"]["split_strategy"] == "group_shuffle_by_repository"
+    assert metadata["split_strategy"] == "group_shuffle_by_repository"
+    assert metadata["dataset_sha256"] == expected_hash
+    assert metadata["trained_at_utc"]
+    assert metadata["model_type"] == "RandomForestClassifier"
 
 
 def test_training_rejects_blank_labels(tmp_path):
