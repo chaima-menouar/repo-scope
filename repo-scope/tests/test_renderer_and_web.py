@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from repo_scope.insights import build_structured_diagnosis
 from repo_scope.report.renderer import render_html, render_json
 from repo_scope.web import app
 
@@ -13,8 +14,8 @@ class FakeProfile:
             "stats": {
                 "repo": {"full_name": "acme/demo", "description": "demo", "stars": 10, "forks": 2, "topics": []},
                 "health": {"score": 80, "label": "Healthy"},
-                "activity": {"commits_90d": 10, "sampled_commits": 20},
-                "contributors": {"bus_factor": 2},
+                "activity": {"commits_90d": 10, "sampled_commits": 20, "days_since_last_commit": 2},
+                "contributors": {"bus_factor": 3},
                 "issues": {"closure_rate_pct": 70},
                 "pull_requests": {"merge_rate_pct": 75},
                 "signals": {"has_ci": True, "has_tests": True},
@@ -44,3 +45,23 @@ def test_web_shell_and_health():
     response = client.get("/api/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+    assert response.json()["version"] == "0.6.0"
+
+
+def test_structured_diagnosis_is_explainable():
+    diagnosis = build_structured_diagnosis(
+        {
+            "stats": {
+                "health": {"score": 45, "label": "Needs attention"},
+                "activity": {"days_since_last_commit": 100},
+                "contributors": {"bus_factor": 1},
+                "issues": {"closure_rate_pct": 35},
+                "pull_requests": {"merge_rate_pct": 40},
+                "signals": {"has_ci": False, "has_tests": False},
+            }
+        }
+    )
+    assert diagnosis["risk_level"] == "high"
+    assert diagnosis["top_risks"]
+    assert diagnosis["next_actions"]
+    assert all(item["evidence"] for item in diagnosis["top_risks"])
