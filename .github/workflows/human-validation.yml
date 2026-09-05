@@ -7,12 +7,14 @@ on:
       - improve/portfolio-ai-cloud
     paths:
       - repo-scope/data/repo_risk_human_review_decisions.csv
+      - repo-scope/scripts/build_human_review_assignments.py
       - repo-scope/scripts/review_human_labels.py
       - repo-scope/scripts/adjudicate_human_reviews.py
       - repo-scope/scripts/report_reviewer_agreement.py
       - repo-scope/scripts/compare_human_weak_labels.py
       - repo-scope/scripts/merge_human_labels.py
       - repo-scope/scripts/evaluate_model_readiness.py
+      - repo-scope/tests/test_human_review_assignments.py
       - .github/workflows/human-validation.yml
 
 permissions:
@@ -71,6 +73,7 @@ jobs:
           python -m pytest -q
           tests/test_human_labels.py
           tests/test_human_review_cli.py
+          tests/test_human_review_assignments.py
           tests/test_human_review_adjudication.py
           tests/test_reviewer_agreement.py
           tests/test_model_readiness.py
