@@ -10,28 +10,52 @@ from repo_scope.ml.training import EXPECTED_LABELS, FEATURE_COLUMNS, FEATURE_SCH
 LEGACY_MODEL_PATH = PROJECT_ROOT / "models" / "repo_risk.joblib"
 SCALED_MODEL_PATH = PROJECT_ROOT / "models" / "repo_risk_100k.joblib"
 SCALED_METRICS_PATH = PROJECT_ROOT / "models" / "repo_risk_100k_metrics.json"
+SCALED_READINESS_PATH = PROJECT_ROOT / "models" / "repo_risk_100k_readiness.json"
+SCALED_PROMOTION_PATH = PROJECT_ROOT / "models" / "repo_risk_100k_promotion.json"
 MIN_SCALED_CLASS_SUPPORT = 20
+
+
+def _read_json(path: Path) -> dict:
+    try:
+        if not path.exists() or not path.stat().st_size:
+            return {}
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return payload if isinstance(payload, dict) else {}
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return {}
 
 
 def scaled_model_is_eligible(
     model_path: Path = SCALED_MODEL_PATH,
     metrics_path: Path = SCALED_METRICS_PATH,
+    readiness_path: Path = SCALED_READINESS_PATH,
+    promotion_path: Path = SCALED_PROMOTION_PATH,
 ) -> bool:
-    if not model_path.exists() or not metrics_path.exists():
+    """Require data support, automated readiness and explicit human promotion approval."""
+    if not model_path.exists():
         return False
-    try:
-        metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
-        counts = {str(label): int(count) for label, count in metrics.get("class_counts", {}).items()}
-    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+
+    metrics = _read_json(metrics_path)
+    counts = {str(label): int(count) for label, count in metrics.get("class_counts", {}).items()}
+    if set(counts) != EXPECTED_LABELS or min(counts.values(), default=0) < MIN_SCALED_CLASS_SUPPORT:
         return False
-    if set(counts) != EXPECTED_LABELS:
+
+    readiness = _read_json(readiness_path)
+    if readiness.get("eligible") is not True or readiness.get("promotion_status") != "eligible_for_manual_review":
         return False
-    return min(counts.values()) >= MIN_SCALED_CLASS_SUPPORT
+
+    promotion = _read_json(promotion_path)
+    return promotion.get("approved") is True
 
 
 def default_model_path() -> Path:
-    """Use the scaled artifact only after all three risk classes have meaningful support."""
-    if scaled_model_is_eligible(SCALED_MODEL_PATH, SCALED_METRICS_PATH):
+    """Use the scaled artifact only after automated validation and explicit manual promotion."""
+    if scaled_model_is_eligible(
+        SCALED_MODEL_PATH,
+        SCALED_METRICS_PATH,
+        SCALED_READINESS_PATH,
+        SCALED_PROMOTION_PATH,
+    ):
         return SCALED_MODEL_PATH
     return LEGACY_MODEL_PATH
 
@@ -70,9 +94,7 @@ def predict_risk(stats: dict, model_path: str | Path | None = None) -> dict:
             return {
                 "available": False,
                 "status": "model_schema_incompatible",
-                "note": (
-                    "The model artifact uses an unsupported RepoScope feature schema and was not loaded."
-                ),
+                "note": "The model artifact uses an unsupported RepoScope feature schema and was not loaded.",
             }
         model = artifact["model"]
         features = artifact["features"]
@@ -95,8 +117,8 @@ def predict_risk(stats: dict, model_path: str | Path | None = None) -> dict:
             "model_artifact": path.name,
             "feature_schema_version": artifact.get("feature_schema_version", FEATURE_SCHEMA_VERSION),
             "note": (
-                "Experimental baseline trained from conservative weak labels based on independent GitHub "
-                "maintenance evidence. It is not a calibrated production risk score."
+                "Experimental model output. Probability values are diagnostic and must not be interpreted "
+                "as calibrated production confidence unless the promoted artifact documentation explicitly says so."
             ),
         }
     except (KeyError, ValueError, TypeError, OSError) as exc:
