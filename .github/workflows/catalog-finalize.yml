@@ -33,8 +33,8 @@ jobs:
           cache: pip
           cache-dependency-path: repo-scope/pyproject.toml
 
-      - name: Install catalog dependencies
-        run: pip install requests
+      - name: Install RepoScope with ML dependencies
+        run: pip install -e ".[ml]"
 
       - name: Advance catalog directly to 60k
         env:
@@ -62,7 +62,14 @@ jobs:
           print({'catalog_rows': len(rows), 'unique_repositories': len(unique)})
           PY
 
-      - name: Update progress summary without changing deep data
+      - name: Refresh dataset quality report at 60k
+        run: |
+          python scripts/report_dataset_quality.py \
+            --catalog data/repository_catalog_100k.csv \
+            --training data/repo_risk_training_combined_100k.csv \
+            --output data/repo_risk_100k_quality.json
+
+      - name: Update final progress summary without changing deep data
         run: |
           python - <<'PY'
           import csv, json
@@ -78,18 +85,37 @@ jobs:
           print(payload)
           PY
 
-      - name: Commit final 60k catalog
+      - name: Refresh model card and readiness
+        run: |
+          if [ -f models/repo_risk_100k_metrics.json ]; then
+            python scripts/generate_model_card.py \
+              --progress data/repo_risk_100k_progress.json \
+              --quality data/repo_risk_100k_quality.json \
+              --metrics models/repo_risk_100k_metrics.json \
+              --output models/repo_risk_100k_model_card.md
+          fi
+          python scripts/evaluate_model_readiness.py \
+            --progress data/repo_risk_100k_progress.json \
+            --quality data/repo_risk_100k_quality.json \
+            --metrics models/repo_risk_100k_metrics.json \
+            --human-comparison data/repo_risk_human_weak_comparison.json \
+            --output models/repo_risk_100k_readiness.json
+
+      - name: Commit final 60k catalog and aligned reports
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f \
             data/repository_catalog_100k.csv \
             data/repository_catalog_100k.state.json \
-            data/repo_risk_100k_progress.json
+            data/repo_risk_100k_progress.json \
+            data/repo_risk_100k_quality.json \
+            models/repo_risk_100k_readiness.json
+          if [ -f models/repo_risk_100k_model_card.md ]; then git add -f models/repo_risk_100k_model_card.md; fi
           if git diff --cached --quiet; then
-            echo "Catalog already at the requested 60k milestone"
+            echo "Catalog and final reports already aligned at the requested 60k milestone"
             exit 0
           fi
-          git commit -m "data: finalize requested 60k catalog milestone [skip ci]"
+          git commit -m "data: align final 60k catalog reports [skip ci]"
           git pull --rebase origin improve/portfolio-ai-cloud
           git push origin HEAD:improve/portfolio-ai-cloud
