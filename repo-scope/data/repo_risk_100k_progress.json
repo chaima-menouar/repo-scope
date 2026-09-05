@@ -1,6 +1,6 @@
 {
   "catalog_target": 100000,
-  "catalog_repositories": 20000,
+  "catalog_repositories": 25000,
   "deep_profile_target": 10000,
   "deep_snapshots": 708,
   "labelled_snapshots": 341,

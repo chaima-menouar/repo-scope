@@ -1,50 +1,55 @@
 {
   "catalog": {
-    "rows": 20000,
-    "active": 17795,
-    "archived": 2205,
+    "rows": 25000,
+    "active": 21795,
+    "archived": 3205,
     "languages": {
       "Python": 5835,
       "JavaScript": 5121,
-      "TypeScript": 1801,
+      "TypeScript": 2798,
       "Ruby": 1000,
+      "Swift": 996,
       "PHP": 989,
+      "Dart": 982,
+      "Kotlin": 981,
       "Rust": 978,
       "Go": 973,
+      "Shell": 973,
       "C#": 963,
       "Java": 944,
       "C++": 736,
-      "Kotlin": 657,
-      "unknown": 3
+      "Scala": 724,
+      "unknown": 7
     },
     "licenses": {
-      "unknown": 9668,
-      "MIT": 5928,
-      "Apache-2.0": 1626,
-      "NOASSERTION": 1262,
-      "AGPL-3.0": 553,
-      "GPL-3.0": 544,
-      "GPL-2.0": 80,
-      "BSD-3-Clause": 76,
-      "CC0-1.0": 50,
-      "MPL-2.0": 46,
-      "Unlicense": 31,
-      "BSD-2-Clause": 28,
-      "ISC": 21,
-      "LGPL-3.0": 20,
+      "unknown": 12748,
+      "MIT": 7012,
+      "Apache-2.0": 1959,
+      "NOASSERTION": 1473,
+      "GPL-3.0": 674,
+      "AGPL-3.0": 617,
+      "BSD-3-Clause": 94,
+      "GPL-2.0": 87,
+      "MPL-2.0": 63,
+      "CC0-1.0": 56,
+      "Unlicense": 45,
+      "BSD-2-Clause": 33,
+      "ISC": 29,
+      "LGPL-3.0": 26,
+      "CC-BY-4.0": 15,
+      "MIT-0": 14,
       "LGPL-2.1": 12,
-      "CC-BY-4.0": 11,
-      "MIT-0": 11,
-      "CC-BY-SA-4.0": 7,
-      "0BSD": 6,
+      "0BSD": 10,
+      "CC-BY-SA-4.0": 8,
       "EUPL-1.2": 6,
+      "EPL-2.0": 5,
       "WTFPL": 3,
       "CERN-OHL-S-2.0": 2,
       "UPL-1.0": 2,
+      "BSD-3-Clause-Clear": 1,
       "BSL-1.0": 1,
       "CERN-OHL-P-2.0": 1,
       "CERN-OHL-W-2.0": 1,
-      "EPL-2.0": 1,
       "MulanPSL-2.0": 1,
       "ODbL-1.0": 1,
       "Zlib": 1
@@ -55,8 +60,8 @@
         "missing_pct": 0.0
       },
       "language": {
-        "missing": 3,
-        "missing_pct": 0.015
+        "missing": 7,
+        "missing_pct": 0.028
       },
       "created_at": {
         "missing": 0,
@@ -75,8 +80,8 @@
         "missing_pct": 0.0
       },
       "license": {
-        "missing": 9668,
-        "missing_pct": 48.34
+        "missing": 12748,
+        "missing_pct": 50.992
       }
     }
   },
