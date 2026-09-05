@@ -17,11 +17,14 @@ def load_queue(path: Path) -> list[dict[str, str]]:
 
 def _balanced_repo_order(rows: list[dict[str, str]]) -> list[str]:
     by_language: dict[str, list[str]] = defaultdict(list)
+    seen_repos: set[str] = set()
     for row in rows:
         repo = (row.get("repo") or "").strip()
+        if not repo or repo in seen_repos:
+            continue
+        seen_repos.add(repo)
         language = (row.get("language") or "unknown").strip() or "unknown"
-        if repo:
-            by_language[language].append(repo)
+        by_language[language].append(repo)
 
     for repos in by_language.values():
         repos.sort(key=str.lower)
@@ -60,6 +63,9 @@ def build_assignments(
         raise ValueError("overlap cannot exceed per_reviewer.")
 
     repos = _balanced_repo_order(rows)
+    if per_reviewer > len(repos):
+        raise ValueError("Review queue is too small for the requested per-reviewer assignment size.")
+
     overlap = min(overlap, len(repos))
     shared = repos[:overlap]
     remaining = repos[overlap:]
@@ -108,6 +114,7 @@ def main() -> None:
         {
             "reviewers": len(set(row["reviewer"] for row in assignments)),
             "assignment_rows": len(assignments),
+            "unique_repositories_assigned": len(set(row["repo"] for row in assignments)),
             "per_reviewer": args.per_reviewer,
             "shared_overlap": args.overlap,
         }
