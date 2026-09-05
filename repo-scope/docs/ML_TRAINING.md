@@ -61,6 +61,8 @@ Model features:
 - `has_ci`
 - `has_tests`
 
+The current feature contract is versioned as `reposcope-risk-features-v1`. The training artifact stores both the ordered feature list and the schema version. Inference fails closed when an artifact advertises an unsupported schema or a mismatched feature list. Pre-versioned legacy artifacts are accepted only when their feature list matches v1 exactly.
+
 Independent labeling evidence collected alongside those features:
 
 - GitHub `archived` status
@@ -97,6 +99,8 @@ Current policy:
 This deliberate 29-day review gap reduces boundary noise. Every accepted weak label records `label_source` and `label_evidence`.
 
 ## Human-review path
+
+The independent reviewer protocol is defined in `docs/HUMAN_LABEL_RUBRIC.md`. Reviewers are blinded from RepoScope's health score, weak label and ML output so human labels do not simply reproduce the automated rules.
 
 The generated review queue and durable human labels are deliberately separate:
 
