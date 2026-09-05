@@ -120,14 +120,12 @@ def _calibration_payload(y_true, probabilities, labels: list[str]) -> dict:
         member_indexes = [
             index
             for index, confidence in enumerate(confidences)
-            if (confidence >= lower and (confidence < upper or (bin_index == 9 and confidence <= upper)))
+            if confidence >= lower and (confidence < upper or (bin_index == 9 and confidence <= upper))
         ]
         if not member_indexes:
             continue
         mean_confidence = sum(confidences[index] for index in member_indexes) / len(member_indexes)
-        accuracy = sum(
-            1 for index in member_indexes if predicted_labels[index] == y_values[index]
-        ) / len(member_indexes)
+        accuracy = sum(1 for index in member_indexes if predicted_labels[index] == y_values[index]) / len(member_indexes)
         weight = len(member_indexes) / sample_count
         ece += weight * abs(accuracy - mean_confidence)
         bins.append(
@@ -153,6 +151,85 @@ def _calibration_payload(y_true, probabilities, labels: list[str]) -> dict:
             "These diagnostics measure probability reliability on weak/human-combined labels. "
             "They do not make the model production-calibrated; human-reviewed validation is still required."
         ),
+    }
+
+
+def _truthy(value) -> bool:
+    return str(value).strip().lower() in {"1", "true", "yes"}
+
+
+def _failure_slice_diagnostics(frame, y_true, predictions) -> dict:
+    """Summarize OOF errors by non-feature context; never train on these slice fields."""
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        raise RuntimeError("Install ML dependencies with: pip install -e .[ml]") from exc
+
+    y_values = [str(value) for value in y_true]
+    predicted_values = [str(value) for value in predictions]
+    dimensions: dict[str, list[str]] = {}
+
+    if "language" in frame.columns:
+        dimensions["language"] = [str(value).strip() or "unknown" for value in frame["language"].fillna("")]
+
+    if "size_kb" in frame.columns:
+        sizes = pd.to_numeric(frame["size_kb"], errors="coerce")
+        buckets = []
+        for value in sizes:
+            if pd.isna(value):
+                buckets.append("unknown")
+            elif value < 1_000:
+                buckets.append("tiny_lt_1mb")
+            elif value < 10_000:
+                buckets.append("small_1mb_10mb")
+            elif value < 100_000:
+                buckets.append("medium_10mb_100mb")
+            else:
+                buckets.append("large_ge_100mb")
+        dimensions["repository_size"] = buckets
+
+    if "archived" in frame.columns:
+        days = pd.to_numeric(frame.get("days_since_last_commit"), errors="coerce").fillna(0)
+        styles = []
+        for archived, inactivity in zip(frame["archived"], days, strict=True):
+            if _truthy(archived):
+                styles.append("archived")
+            elif float(inactivity) >= 365:
+                styles.append("stale_active")
+            else:
+                styles.append("recent_active")
+        dimensions["maintenance_style"] = styles
+
+    result: dict[str, list[dict]] = {}
+    for dimension, values in dimensions.items():
+        groups: dict[str, list[int]] = {}
+        for index, value in enumerate(values):
+            groups.setdefault(value, []).append(index)
+        rows = []
+        for value, indexes in groups.items():
+            if len(indexes) < 5:
+                continue
+            correct = sum(1 for index in indexes if y_values[index] == predicted_values[index])
+            label_counts = {label: 0 for label in LABEL_ORDER}
+            for index in indexes:
+                if y_values[index] in label_counts:
+                    label_counts[y_values[index]] += 1
+            rows.append(
+                {
+                    "slice": value,
+                    "count": len(indexes),
+                    "accuracy": round(correct / len(indexes), 6),
+                    "error_count": len(indexes) - correct,
+                    "label_counts": label_counts,
+                }
+            )
+        if rows:
+            result[dimension] = sorted(rows, key=lambda item: (item["accuracy"], -item["count"], item["slice"]))
+
+    return {
+        "source": "repository-grouped out-of-fold predictions",
+        "context_is_not_model_input": True,
+        "dimensions": result,
     }
 
 
@@ -202,8 +279,7 @@ def _temporal_holdout(frame, x, y, groups) -> dict:
             "available": False,
             "reason": "older temporal training partition does not contain all three risk classes",
             "train_class_counts": {
-                str(label): int(count)
-                for label, count in temporal_y_train.value_counts().sort_index().items()
+                str(label): int(count) for label, count in temporal_y_train.value_counts().sort_index().items()
             },
         }
 
@@ -213,8 +289,7 @@ def _temporal_holdout(frame, x, y, groups) -> dict:
     payload = _evaluation_payload(temporal_y_test, predictions)
     cutoff = repo_times.iloc[-test_repository_count]["snapshot"]
     test_class_counts = {
-        str(label): int(count)
-        for label, count in temporal_y_test.value_counts().sort_index().items()
+        str(label): int(count) for label, count in temporal_y_test.value_counts().sort_index().items()
     }
     payload.update(
         {
@@ -259,21 +334,15 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         raise ValueError("Each class needs at least two repositories for grouped cross-validation.")
 
     cv = StratifiedGroupKFold(n_splits=cv_folds, shuffle=True, random_state=42)
-    cv_probabilities = cross_val_predict(
-        _model(), x, y, groups=groups, cv=cv, n_jobs=-1, method="predict_proba"
-    )
+    cv_probabilities = cross_val_predict(_model(), x, y, groups=groups, cv=cv, n_jobs=-1, method="predict_proba")
     cv_predictions = [
         PROBABILITY_LABEL_ORDER[max(range(len(row)), key=lambda index: float(row[index]))]
         for row in cv_probabilities
     ]
     cv_metrics = _evaluation_payload(y, cv_predictions)
-    cv_metrics.update(
-        {
-            "strategy": "stratified_group_k_fold",
-            "folds": cv_folds,
-        }
-    )
+    cv_metrics.update({"strategy": "stratified_group_k_fold", "folds": cv_folds})
     calibration = _calibration_payload(y, cv_probabilities, PROBABILITY_LABEL_ORDER)
+    failure_slices = _failure_slice_diagnostics(frame, y, cv_predictions)
 
     warning_reasons = []
     if len(frame) < 100:
@@ -352,6 +421,7 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
             "cross_validation_folds": cv_folds,
             "temporal_holdout_available": bool(temporal_holdout.get("available")),
             "probability_status": "uncalibrated_analysis_only",
+            "failure_slice_context_available": bool(failure_slices.get("dimensions")),
             "random_state": 42,
             "class_counts": class_counts,
             "label_sources": label_sources,
@@ -382,6 +452,7 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         "feature_importance": feature_importance,
         "cross_validation": cv_metrics,
         "calibration": calibration,
+        "failure_slices": failure_slices,
         "heldout": heldout,
         "temporal_holdout": temporal_holdout,
         "heldout_report": heldout["report"],
