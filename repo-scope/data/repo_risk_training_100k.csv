@@ -1,60 +1,113 @@
 repo,days_since_last_commit,bus_factor,issue_closure_rate_pct,pr_merge_rate_pct,commits_90d,contributors_sampled,has_ci,has_tests,snapshot_at_utc,archived,latest_release_age_days,latest_release_at,label,label_source,label_evidence
+0ver1ay/Seedream-Demo,3,1,0,0,5,1,1,1,2026-09-05T13:52:20.126969+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 1186258278/OpenClawChineseTranslation,1,1,35.0,0,18,8,1,1,2026-09-05T13:41:54.169705+00:00,0,1,2026-09-04T10:45:01Z,healthy,recent_release_evidence,Latest GitHub release is 1 days old.
 0ui0/owo_terminal_public,0,1,0,0,38,1,1,1,2026-09-05T13:41:54.172895+00:00,0,0,2026-09-05T10:30:26Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+0x006a6d/ghost,54,1,100.0,0,2,1,0,0,2026-09-05T13:52:23.032970+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 01Virex/dsh-status-rotator,1,1,100.0,100.0,66,5,1,0,2026-09-05T13:41:56.937533+00:00,0,1,2026-09-04T10:39:33Z,healthy,recent_release_evidence,Latest GitHub release is 1 days old.
+0xH4KU/comix-downloader,84,1,100.0,87.5,42,1,1,1,2026-09-05T13:52:23.146730+00:00,1,84,2026-06-12T14:14:46Z,risky,github_archived_flag,GitHub marks this repository as archived.
 0xRadikal/Free-v2ray-Configs,0,1,0,57.1,100,6,1,1,,0,11,2026-08-24T22:48:45Z,healthy,recent_release_evidence,Latest GitHub release is 11 days old.
 Agents365-ai/drawio-skill,2,1,100.0,96.7,90,11,1,1,2026-09-05T13:41:57.470033+00:00,0,2,2026-09-03T05:10:09Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
+TiagoAloha/ai-job-search,9,2,0,0,100,54,1,1,2026-09-05T13:52:25.592717+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
+gudzenkov/SuperClaude,229,2,0,0,0,40,1,1,2026-09-05T13:52:26.018559+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
+21StarkCom/bifrost,0,1,0,94.0,100,4,1,1,2026-09-05T13:52:29.318587+00:00,0,0,2026-09-05T13:34:23Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+1Example/1Example-Cogs,11,1,0,0,10,1,0,1,2026-09-05T13:52:29.203338+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 0xSteph/patient-zero,0,1,0,0,100,3,1,1,2026-09-05T13:42:00.622978+00:00,0,114,2026-05-14T09:59:17Z,healthy,recent_release_evidence,Latest GitHub release is 114 days old.
 1186258278/OpenCodeChineseTranslation,177,1,66.7,0,0,2,1,0,2026-09-05T13:42:01.571523+00:00,0,209,2026-02-08T00:26:35Z,watch,stale_release_evidence,Latest GitHub release is 209 days old; repository is not archived.
 DietrichGebert/ponytail,1,1,9.1,48.0,100,64,1,1,2026-09-05T13:42:03.409987+00:00,0,28,2026-08-07T21:15:11Z,healthy,recent_release_evidence,Latest GitHub release is 28 days old.
+0xbbuddha/hermes,182,1,0,100.0,0,2,1,0,2026-09-05T13:52:30.633753+00:00,1,182,2026-03-06T17:05:46Z,risky,github_archived_flag,GitHub marks this repository as archived.
+Agentscreator/engram-memory,105,1,94.7,97.0,0,27,1,1,2026-09-05T13:52:32.500198+00:00,1,138,2026-04-20T02:35:56Z,risky,github_archived_flag,GitHub marks this repository as archived.
 AgriciDaniel/claude-ads,53,1,17.4,21.4,39,2,1,1,2026-09-05T13:42:03.566828+00:00,0,53,2026-07-13T20:22:38Z,healthy,recent_release_evidence,Latest GitHub release is 53 days old.
 0xMH/pyfunda,1,1,87.5,83.3,5,2,1,1,,0,6,2026-08-29T21:53:05Z,healthy,recent_release_evidence,Latest GitHub release is 6 days old.
+notationsystems/nvalchemi-toolkit,11,2,0,0,26,12,1,1,2026-09-05T13:52:32.052097+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 3IVIS/buildaharness,0,2,0,100.0,100,3,1,1,2026-09-05T13:42:06.194680+00:00,0,1,2026-09-04T09:01:58Z,healthy,recent_release_evidence,Latest GitHub release is 1 days old.
+2-X/high-fps-dolphin,19,1,0,0,27,1,0,1,2026-09-05T13:52:34.992054+00:00,1,19,2026-08-17T00:47:03Z,risky,github_archived_flag,GitHub marks this repository as archived.
 0xuezhang985/985gmgn-helper,0,1,0,0,100,1,1,0,2026-09-05T13:42:06.702841+00:00,0,0,2026-09-05T12:32:12Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+AlbertTan404/Latent-Exploration-Decoding,122,1,0,0,0,1,1,1,2026-09-05T13:52:37.023987+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 EvoMap/evolver,0,1,78.5,22.1,52,9,1,1,2026-09-05T13:42:09.650910+00:00,0,1,2026-09-04T12:30:03Z,healthy,recent_release_evidence,Latest GitHub release is 1 days old.
+EvolvingAgentsLabs/skillos,34,1,0,84.6,8,4,0,1,2026-09-05T13:52:38.203456+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 0xSteph/pentest-ai,2,1,100.0,55.0,63,1,1,1,,0,3,2026-09-02T03:27:01Z,healthy,recent_release_evidence,Latest GitHub release is 3 days old.
 1076184145/video-automation,0,1,0,94.1,65,3,1,1,,0,0,2026-09-05T02:34:55Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
 AgriciDaniel/claude-obsidian,10,1,2.3,16.7,42,3,1,1,2026-09-05T13:42:10.373434+00:00,0,10,2026-08-25T23:32:08Z,healthy,recent_release_evidence,Latest GitHub release is 10 days old.
+201650545/ai-hub,2,1,0,0,69,1,1,1,2026-09-05T13:52:37.849516+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
+AlexBtlle/pi0-Camera-HomeKit,60,1,0,90.0,51,2,0,0,2026-09-05T13:52:39.762772+00:00,1,87,2026-06-10T09:30:57Z,risky,github_archived_flag,GitHub marks this repository as archived.
+Flowseal/telegaru-mitm-PoC,163,1,100.0,0,0,1,0,0,2026-09-05T13:52:42.529205+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 1095327780/FLOWnote,0,1,100.0,88.9,28,1,1,1,2026-09-05T13:42:12.897492+00:00,0,0,2026-09-05T07:13:51Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
 Fei-Away/Codex-Dream-Skin,0,1,33.3,56.8,100,23,1,1,2026-09-05T13:42:15.961503+00:00,0,9,2026-08-27T02:44:15Z,healthy,recent_release_evidence,Latest GitHub release is 9 days old.
+4444J99/the-thing-without-a-name,4,1,0,100.0,100,3,1,1,2026-09-05T13:52:43.912762+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 0xchasercat/draco,0,2,33.3,100.0,100,4,1,1,2026-09-05T13:42:15.871401+00:00,0,51,2026-07-16T09:57:14Z,healthy,recent_release_evidence,Latest GitHub release is 51 days old.
 1bananachicken/MaaNTE,2,2,64.4,89.4,86,28,1,0,,0,5,2026-08-30T14:36:31Z,healthy,recent_release_evidence,Latest GitHub release is 5 days old.
+AmethystDev-Labs/TenVision,208,1,9.1,0,0,1,1,0,2026-09-05T13:52:43.627528+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 1CatAI/1Cat-vLLM,0,12,55.9,84.4,100,100,1,1,,0,3,2026-09-02T09:47:14Z,healthy,recent_release_evidence,Latest GitHub release is 3 days old.
 AgriciDaniel/claude-seo,10,1,64.9,9.8,37,13,1,1,2026-09-05T13:42:17.560687+00:00,0,10,2026-08-25T20:19:42Z,healthy,recent_release_evidence,Latest GitHub release is 10 days old.
+JiangXu26710/etalien-auto,8,1,87.5,0,100,1,0,0,2026-09-05T13:52:45.375104+00:00,1,8,2026-08-28T07:39:20Z,risky,github_archived_flag,GitHub marks this repository as archived.
+4gr8justice/glue-gaming-mode,7,1,0,0,6,1,0,0,2026-09-05T13:52:47.585456+00:00,1,34,2026-08-02T03:14:08Z,risky,github_archived_flag,GitHub marks this repository as archived.
 Blueturboguy07/cue,26,2,43.8,63.6,100,21,1,1,2026-09-05T13:42:19.820193+00:00,0,34,2026-08-01T16:13:57Z,healthy,recent_release_evidence,Latest GitHub release is 34 days old.
+Angiin/xiaohongshu-skill,183,1,0,0,0,1,0,0,2026-09-05T13:52:48.620459+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 JCodesMore/ai-website-cloner-template,21,1,100.0,27.6,28,13,1,0,2026-09-05T13:42:21.965646+00:00,0,26,2026-08-10T05:10:24Z,healthy,recent_release_evidence,Latest GitHub release is 26 days old.
+Msg-Lbo/codeX-register,151,1,75.0,100.0,0,2,1,0,2026-09-05T13:52:50.128655+00:00,1,151,2026-04-06T15:48:42Z,risky,github_archived_flag,GitHub marks this repository as archived.
 120318/Aethera,0,1,0,96.8,21,1,1,1,,0,28,2026-08-08T11:20:59Z,healthy,recent_release_evidence,Latest GitHub release is 28 days old.
 1mancompany/OneManCompany,9,1,55.6,83.8,25,10,1,1,,0,118,2026-05-09T23:36:41Z,healthy,recent_release_evidence,Latest GitHub release is 118 days old.
+53able/large-system-replacement-skills,4,1,0,0,2,1,1,0,2026-09-05T13:52:50.287600+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 0xzerolight/anki_miner,1,1,100.0,80.8,100,7,1,1,,0,2,2026-09-02T20:41:49Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
+231self/maskura,0,1,100.0,96.2,100,2,1,1,2026-09-05T13:52:51.813468+00:00,0,5,2026-08-31T11:45:42Z,healthy,recent_release_evidence,Latest GitHub release is 5 days old.
 714307168/AgentFlow,0,1,100.0,0,100,1,1,1,2026-09-05T13:42:24.721179+00:00,0,0,2026-09-05T09:43:15Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+ArcReel/cc-novel2video,211,1,0,85.7,0,1,0,1,2026-09-05T13:52:52.758308+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
+Star123451/LuaToolsLinux,80,1,40.0,0,7,3,0,1,2026-09-05T13:52:55.378579+00:00,1,96,2026-06-01T01:32:42Z,risky,github_archived_flag,GitHub marks this repository as archived.
 50kg/image-to-slice,21,1,100.0,0,8,1,0,1,2026-09-05T13:42:26.871895+00:00,0,21,2026-08-15T10:40:21Z,healthy,recent_release_evidence,Latest GitHub release is 21 days old.
 LaoFeng-mouse/flyingmouse-format,0,1,5.6,20.0,60,2,1,1,2026-09-05T13:42:27.546467+00:00,0,9,2026-08-27T06:37:07Z,healthy,recent_release_evidence,Latest GitHub release is 9 days old.
+733402/python-desktop,2,1,0,100.0,11,2,0,0,2026-09-05T13:52:55.296650+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
+AsuNa-jp/TLGMapper,75,1,0,66.7,1,3,0,1,2026-09-05T13:52:57.456581+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 23Star/xianyu-super-butler,0,2,68.6,72.4,100,10,1,1,,0,19,2026-08-16T14:48:53Z,healthy,recent_release_evidence,Latest GitHub release is 19 days old.
 Andyyyy64/whichllm,22,1,79.1,85.1,49,23,1,1,2026-09-05T13:42:30.548909+00:00,0,22,2026-08-14T05:48:23Z,healthy,recent_release_evidence,Latest GitHub release is 22 days old.
+TaylorHuston/local-life-manager,67,1,0,0,1,1,0,0,2026-09-05T13:52:57.710316+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
+84634E1A607A/claude-code-router-py,1,1,0,0,7,2,0,1,2026-09-05T13:53:00.198995+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
+178991907/notion-repo,0,1,0,0,71,1,1,1,2026-09-05T13:53:01.239313+00:00,0,0,2026-09-04T16:06:09Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+BRDK-Public/as-help-mcp,101,1,0,85.7,0,3,1,1,2026-09-05T13:53:02.856336+00:00,1,108,2026-05-20T13:07:07Z,risky,github_archived_flag,GitHub marks this repository as archived.
 1661169091kiwi/Knote,10,1,75.0,100.0,100,4,1,1,2026-09-05T13:42:34.872814+00:00,0,10,2026-08-25T16:39:22Z,healthy,recent_release_evidence,Latest GitHub release is 10 days old.
+Tips-Discord/ZugToken,102,1,100.0,0,0,1,0,0,2026-09-05T13:53:02.694790+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 14790897/MiqroForge-Desktop,0,2,58.6,96.4,100,100,1,1,,0,1,2026-09-04T03:27:27Z,healthy,recent_release_evidence,Latest GitHub release is 1 days old.
 2951461586/GPT-Register-Tool,4,1,11.1,0,100,1,1,1,,0,5,2026-08-30T17:02:51Z,healthy,recent_release_evidence,Latest GitHub release is 5 days old.
+A-TownChain-Okosystems/atclang,5,1,0,0,90,4,0,1,2026-09-05T13:53:04.002850+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 AIGeniusInstitute/deepthink,0,2,0,85.7,100,13,1,1,2026-09-05T13:42:37.540614+00:00,0,8,2026-08-28T11:35:40Z,healthy,recent_release_evidence,Latest GitHub release is 8 days old.
+Chen-Rong-Zi/nju-power-watch,25,1,62.5,92.0,100,3,1,1,2026-09-05T13:53:06.440196+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
+Aftergraph/works-execution,0,1,0,100.0,100,6,1,1,2026-09-05T13:53:06.975215+00:00,0,2,2026-09-03T08:32:23Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
+7Str1kes/Nexus,0,1,0,0,15,1,0,0,2026-09-05T13:53:07.468860+00:00,0,77,2026-06-19T14:30:30Z,healthy,recent_release_evidence,Latest GitHub release is 77 days old.
+Xeron2000/fx-gateway-proxy,7,1,0,100.0,35,4,1,1,2026-09-05T13:53:09.030098+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 CoderLuii/HolyClaude,2,1,98.0,9.4,33,2,1,1,2026-09-05T13:42:38.172891+00:00,0,2,2026-09-02T18:51:28Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
 2nd1st/open-mcp-apps,0,1,0,50.0,22,3,1,0,2026-09-05T13:42:37.513605+00:00,0,0,2026-09-05T08:48:19Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+AAosZ/Undergraduate-Works,3,1,0,0,31,3,0,1,2026-09-05T13:53:09.560785+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 1837620622/chatgpt-specimen-toolbox,10,1,33.3,0,8,1,0,1,2026-09-05T13:42:39.706520+00:00,0,94,2026-06-03T12:51:01Z,healthy,recent_release_evidence,Latest GitHub release is 94 days old.
 917Dhj/DeepPaperNote,1,1,80.0,76.5,100,8,1,1,,0,6,2026-08-29T18:17:47Z,healthy,recent_release_evidence,Latest GitHub release is 6 days old.
+Clear-Sights/Detent,26,1,100.0,100.0,36,2,1,1,2026-09-05T13:53:09.986024+00:00,1,54,2026-07-12T20:15:18Z,risky,github_archived_flag,GitHub marks this repository as archived.
 2akouwu/reverify,0,1,40.0,88.9,71,3,1,1,,0,0,2026-09-04T18:13:34Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
 BigBodyCobain/Shadowbroker,12,1,100.0,22.2,100,30,1,1,2026-09-05T13:42:41.345463+00:00,0,30,2026-08-05T19:22:06Z,healthy,recent_release_evidence,Latest GitHub release is 30 days old.
 2718labs/2718lab-devkit,0,1,100.0,80.0,100,1,1,1,,0,0,2026-09-05T05:41:56Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+A3S-Lab/Flow,0,1,100.0,100.0,100,3,1,1,2026-09-05T13:53:11.452918+00:00,0,10,2026-08-25T14:43:52Z,healthy,recent_release_evidence,Latest GitHub release is 10 days old.
+abcnuts/manus-skills,187,1,0,0,0,2,0,1,2026-09-05T13:53:11.554706+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
+ATSPwang618/YUNYIN,0,1,0,0,18,1,0,0,2026-09-05T13:53:12.115449+00:00,0,0,2026-09-04T22:57:35Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+AR0NICA/project-argus,9,1,0,0,16,2,0,1,2026-09-05T13:53:13.959559+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
+955xiaolan520/Dsu-Manager,0,1,0,0,31,2,1,0,2026-09-05T13:53:13.929947+00:00,0,0,2026-09-05T13:27:43Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
 359956085/codex-widget,0,1,50.0,0,100,2,1,1,2026-09-05T13:42:44.382949+00:00,0,0,2026-09-05T08:42:11Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+CloudWaddie/yuppbridge,157,1,100.0,100.0,0,2,1,1,2026-09-05T13:53:14.694685+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 3kh0/slick,12,1,72.7,83.7,100,11,1,1,2026-09-05T13:42:48.005290+00:00,0,20,2026-08-16T01:07:25Z,healthy,recent_release_evidence,Latest GitHub release is 20 days old.
+airweave-ai/slack-knowledge-assistant,205,1,0,0,0,1,0,0,2026-09-05T13:53:16.433437+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 2233admin/opencli-Razormind,0,2,27.8,85.5,100,14,1,1,,0,33,2026-08-03T13:29:18Z,healthy,recent_release_evidence,Latest GitHub release is 33 days old.
 3169657175/gpt-webcodex,11,1,14.3,0,5,2,0,1,,0,7,2026-08-29T08:55:52Z,healthy,recent_release_evidence,Latest GitHub release is 7 days old.
 CloakHQ/CloakBrowser,6,1,17.2,39.0,100,19,1,1,2026-09-05T13:42:48.282907+00:00,0,0,2026-09-04T19:36:34Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+AWF-Z/car-bench-quarry-v14,5,1,0,0,6,1,1,1,2026-09-05T13:53:16.390827+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
+A3S-Lab/OCI-Runtime,0,1,100.0,98.0,100,3,1,1,2026-09-05T13:53:17.788519+00:00,0,40,2026-07-27T12:33:41Z,healthy,recent_release_evidence,Latest GitHub release is 40 days old.
 AdityaKodez/adityaojha,0,1,0,94.3,45,6,0,0,2026-09-05T13:42:49.101256+00:00,0,183,2026-03-05T13:55:19Z,watch,stale_release_evidence,Latest GitHub release is 183 days old; repository is not archived.
+CodeAlive-AI/fpf-problem-solving-skill,124,1,0,0,0,1,0,0,2026-09-05T13:53:18.959059+00:00,1,166,2026-03-22T14:06:17Z,risky,github_archived_flag,GitHub marks this repository as archived.
+alt-research2/SolidityGuard,93,1,75.0,66.7,0,3,1,1,2026-09-05T13:53:21.836214+00:00,1,197,2026-02-20T03:07:37Z,risky,github_archived_flag,GitHub marks this repository as archived.
 Doorman11991/smallcode,30,1,75.0,61.9,33,16,1,1,2026-09-05T13:42:51.497442+00:00,0,97,2026-05-31T05:35:24Z,healthy,recent_release_evidence,Latest GitHub release is 97 days old.
 371684029/oh-my-co-work,2,1,0,90.6,100,2,1,1,2026-09-05T13:42:51.586054+00:00,0,2,2026-09-03T01:45:33Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
 715494637/reverse-skill,157,1,0,0,0,1,1,1,2026-09-05T13:42:51.625170+00:00,0,126,2026-05-02T01:07:26Z,healthy,recent_release_evidence,Latest GitHub release is 126 days old.
 QLHazyCoder/FlowPilot,10,1,3.4,56.0,52,44,0,1,2026-09-05T13:42:52.910486+00:00,0,20,2026-08-15T19:47:25Z,healthy,recent_release_evidence,Latest GitHub release is 20 days old.
+Aadi-198/Market_simulator,3,1,0,0,1,1,0,0,2026-09-05T13:53:21.545603+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 658jjh/claude-usage-tracker,23,1,44.4,0,4,2,0,0,2026-09-05T13:42:53.921248+00:00,0,23,2026-08-12T18:29:27Z,healthy,recent_release_evidence,Latest GitHub release is 23 days old.
 AMAP-ML/LongHorizon-Harness,16,1,20.0,75.8,40,10,1,1,,0,16,2026-08-20T12:37:01Z,healthy,recent_release_evidence,Latest GitHub release is 16 days old.
 2501Pr0ject/RAGnarok-AI,0,1,100.0,96.8,41,4,1,1,,0,1,2026-09-04T10:34:53Z,healthy,recent_release_evidence,Latest GitHub release is 1 days old.
+CuzTeam/ClaudeDesktop-ModelIDPatch,59,1,68.8,16.7,26,3,1,0,2026-09-05T13:53:24.376581+00:00,1,,,risky,github_archived_flag,GitHub marks this repository as archived.
 410979729/scope-recall-hermes,0,1,95.8,69.6,100,4,1,1,,0,5,2026-08-31T11:19:43Z,healthy,recent_release_evidence,Latest GitHub release is 5 days old.
 Emily2040/seedance-2.0,0,2,28.6,94.9,100,4,1,1,2026-09-05T13:42:54.849347+00:00,0,30,2026-08-06T06:26:10Z,healthy,recent_release_evidence,Latest GitHub release is 30 days old.
 525815266/YYB-Go-Enhanced,0,1,100.0,33.3,100,2,1,1,,0,18,2026-08-18T00:54:01Z,healthy,recent_release_evidence,Latest GitHub release is 18 days old.
@@ -65,13 +118,11 @@ AHouseOfBards/Bonfire-JellyProfiles,4,1,91.3,33.3,100,5,1,1,2026-09-05T13:42:59.
 69gg/Undefined,9,1,100.0,97.7,31,2,1,1,,0,9,2026-08-27T07:14:58Z,healthy,recent_release_evidence,Latest GitHub release is 9 days old.
 ARahim3/mlx-tune,74,1,37.5,0,1,1,0,1,,0,74,2026-06-23T12:24:30Z,healthy,recent_release_evidence,Latest GitHub release is 74 days old.
 6v17/VideoSeek,0,1,100.0,0,100,2,1,1,,0,24,2026-08-11T17:38:21Z,healthy,recent_release_evidence,Latest GitHub release is 24 days old.
-Aiyo28/memento-os,0,1,0,0,2,1,1,1,,0,105,2026-05-23T07:18:07Z,healthy,recent_release_evidence,Latest GitHub release is 105 days old.
 5945ggh/EasierLightNovel,0,1,100.0,100.0,24,2,0,1,,0,214,2026-02-02T16:10:56Z,watch,stale_release_evidence,Latest GitHub release is 214 days old; repository is not archived.
 751K/holland2stay-monitor,0,1,100.0,0,100,1,1,1,,0,2,2026-09-02T13:52:14Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
 AIOSAI/AIPass,3,1,88.6,95.9,100,5,1,1,,0,3,2026-09-01T20:59:13Z,healthy,recent_release_evidence,Latest GitHub release is 3 days old.
 88lin/workbuddy-auto-signin,0,1,100.0,0,18,1,1,0,,0,3,2026-09-02T02:44:53Z,healthy,recent_release_evidence,Latest GitHub release is 3 days old.
 Agents365-ai/video-podcast-maker,0,1,100.0,92.3,95,2,1,1,,0,35,2026-08-01T05:16:23Z,healthy,recent_release_evidence,Latest GitHub release is 35 days old.
-Alex-Kopylov/zweihander,0,1,12.5,98.3,100,3,1,1,,0,98,2026-05-30T09:44:01Z,healthy,recent_release_evidence,Latest GitHub release is 98 days old.
 AgriciDaniel/banana-claude,6,1,0,20.0,4,1,1,1,,0,6,2026-08-30T01:32:12Z,healthy,recent_release_evidence,Latest GitHub release is 6 days old.
 ARahim3/mlx-dspark,4,1,34.8,20.0,100,3,1,1,,0,4,2026-09-01T10:54:45Z,healthy,recent_release_evidence,Latest GitHub release is 4 days old.
 ADVICEsama/CivitaiFreeTool,0,1,100.0,100.0,50,3,1,1,,0,0,2026-09-05T04:44:12Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
@@ -95,6 +146,7 @@ Agents365-ai/zotero-cli-ai,3,1,100.0,91.0,78,4,1,1,,0,17,2026-08-19T01:40:41Z,he
 ARPAHLS/skillware,1,1,58.2,89.5,100,25,1,1,,0,1,2026-09-03T16:19:34Z,healthy,recent_release_evidence,Latest GitHub release is 1 days old.
 AgamiAI/agami-core,0,1,18.8,89.9,100,3,1,1,,0,0,2026-09-05T07:17:14Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
 Ajay150313/agentsre,2,1,0,100.0,9,1,1,1,,0,104,2026-05-23T22:12:03Z,healthy,recent_release_evidence,Latest GitHub release is 104 days old.
+Aiyo28/memento-os,0,1,0,0,2,1,1,1,,0,105,2026-05-23T07:18:07Z,healthy,recent_release_evidence,Latest GitHub release is 105 days old.
 ArcReel/ArcReel,0,1,90.3,80.5,100,18,1,1,,0,0,2026-09-05T08:55:08Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
 AidALL/ghost-alice,0,1,75.0,100.0,39,1,1,1,,0,19,2026-08-17T10:34:44Z,healthy,recent_release_evidence,Latest GitHub release is 19 days old.
 Alban1911/Rose,5,1,86.2,57.9,74,14,0,1,,0,39,2026-07-27T23:26:34Z,healthy,recent_release_evidence,Latest GitHub release is 39 days old.
@@ -102,10 +154,10 @@ AVADSA25/codec,0,1,0,100.0,100,4,1,1,,0,99,2026-05-29T09:25:09Z,healthy,recent_r
 AvdLee/SwiftUI-Agent-Skill,23,2,85.7,92.3,22,21,1,1,,0,24,2026-08-12T13:13:11Z,healthy,recent_release_evidence,Latest GitHub release is 24 days old.
 AliceJump/ok-end-field,0,1,50.0,92.9,100,19,1,1,,0,0,2026-09-04T19:28:51Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
 Alchemist-Jo/textbook-anything,0,1,0,0,5,1,1,1,,0,0,2026-09-05T10:09:38Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+Alex-Kopylov/zweihander,0,1,12.5,98.3,100,3,1,1,,0,98,2026-05-30T09:44:01Z,healthy,recent_release_evidence,Latest GitHub release is 98 days old.
 AvenCores/open-antigravity-patcher,2,1,98.9,46.2,100,6,1,0,,0,2,2026-09-02T18:45:58Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
 Aletheore/Aletheore,0,1,0,91.7,100,2,1,1,,0,3,2026-09-02T01:47:46Z,healthy,recent_release_evidence,Latest GitHub release is 3 days old.
 Alos21750/UAV-Downloader,0,1,95.5,0,100,5,1,1,,0,4,2026-09-01T03:56:30Z,healthy,recent_release_evidence,Latest GitHub release is 4 days old.
-Chrizhermann/chriz-bg-modpack,0,1,0,100.0,5,2,1,1,,0,1,2026-09-04T10:35:36Z,healthy,recent_release_evidence,Latest GitHub release is 1 days old.
 Awarexone/Agentic-Bug-Hunter,0,2,100.0,80.8,100,35,1,1,,0,15,2026-08-21T06:46:47Z,healthy,recent_release_evidence,Latest GitHub release is 15 days old.
 BigDawnGhost/wenyi,2,1,41.7,90.1,100,15,1,1,,0,4,2026-08-31T15:14:06Z,healthy,recent_release_evidence,Latest GitHub release is 4 days old.
 AllenXiao95/Game-Localizer,0,1,41.7,100.0,100,1,1,1,,0,12,2026-08-24T06:27:36Z,healthy,recent_release_evidence,Latest GitHub release is 12 days old.
@@ -169,7 +221,6 @@ BottomCustodian/Onimusha-Way-of-the-Sword-Trainer,0,1,0,0,100,1,0,0,,0,0,2026-09
 Cellium-Project/Cellium-Agent,0,1,50.0,90.2,100,3,1,1,,0,0,2026-09-05T03:44:28Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
 BrightbeamAI/chap,1,2,72.7,94.6,93,4,1,1,,0,15,2026-08-20T17:27:30Z,healthy,recent_release_evidence,Latest GitHub release is 15 days old.
 CarlosCaPe/octorato,0,1,33.3,100.0,100,7,1,1,,0,0,2026-09-05T12:42:50Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
-Guillaume-Lombardo/simple-md-to-docx-converter,0,1,0,98.0,100,2,1,1,,0,2,2026-09-03T07:02:22Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
 ChaoticSi1ence/SlimBrave-Neo,2,2,100.0,77.8,55,7,1,1,,0,2,2026-09-03T07:46:48Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
 ChaoYue0307/awesome-graph-engineering,0,1,0,0,46,1,1,0,,0,46,2026-07-21T07:02:04Z,healthy,recent_release_evidence,Latest GitHub release is 46 days old.
 ChenShuo2004/cs-board,1,1,0,100.0,8,1,0,1,,0,2,2026-09-03T12:23:13Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
@@ -185,6 +236,7 @@ CrankBoyHQ/crankboy-manager,0,1,100.0,66.7,22,4,1,0,,0,0,2026-09-05T11:26:55Z,he
 ChaoYue0307/awesome-loop-engineering,0,1,76.5,0,100,1,1,0,,0,44,2026-07-22T18:07:15Z,healthy,recent_release_evidence,Latest GitHub release is 44 days old.
 Cyfrin/clearsig,0,1,20.0,58.3,7,3,1,1,,0,0,2026-09-04T23:41:58Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
 Classic298/open-webui-plugins,3,1,95.2,97.4,100,5,0,1,,0,3,2026-09-01T18:35:42Z,healthy,recent_release_evidence,Latest GitHub release is 3 days old.
+Chrizhermann/chriz-bg-modpack,0,1,0,100.0,5,2,1,1,,0,1,2026-09-04T10:35:36Z,healthy,recent_release_evidence,Latest GitHub release is 1 days old.
 Cyrax321/CONTINUUM,0,1,58.0,94.0,100,31,1,1,,0,5,2026-08-30T20:31:35Z,healthy,recent_release_evidence,Latest GitHub release is 5 days old.
 CloakHQ/CloakBrowser-Manager,6,1,27.0,50.0,37,2,1,1,,0,6,2026-08-30T04:21:05Z,healthy,recent_release_evidence,Latest GitHub release is 6 days old.
 CloudChef/atlasclaw,0,2,0,85.0,68,13,1,1,,0,9,2026-08-27T06:15:14Z,healthy,recent_release_evidence,Latest GitHub release is 9 days old.
@@ -277,5 +329,6 @@ GodModeAI2025/NightShift,0,1,0,100.0,37,3,1,1,,0,0,2026-09-04T20:09:27Z,healthy,
 GodModeAI2025/kimi-k3-in-c-macos,0,1,0,100.0,41,3,1,1,,0,0,2026-09-04T20:09:30Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
 GodModeAI2025/prompt-injection-scanner,0,1,0,100.0,43,3,1,1,,0,0,2026-09-04T20:14:12Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
 GodModeAI2025/specforge-ai-skill,0,1,0,90.0,48,3,1,1,,0,0,2026-09-04T20:09:14Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
+Guillaume-Lombardo/simple-md-to-docx-converter,0,1,0,98.0,100,2,1,1,,0,2,2026-09-03T07:02:22Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
 Guillain-RDCDE/FLAC_Detective,0,1,50.0,100.0,100,1,1,1,,0,2,2026-09-02T14:37:50Z,healthy,recent_release_evidence,Latest GitHub release is 2 days old.
 HEGOM61ita/OffGallery,0,1,100.0,0,100,1,1,1,,0,0,2026-09-05T11:25:44Z,healthy,recent_release_evidence,Latest GitHub release is 0 days old.
