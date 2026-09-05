@@ -9,7 +9,7 @@ RepoScope uses this model to explore whether repository-maintenance risk can be 
 ## Data snapshot
 
 - Catalog target: 100000
-- Catalog repositories collected: 35000
+- Catalog repositories collected: 40000
 - Deep-profile target: 10000
 - Deep snapshots collected: 680
 - Labelled snapshots: 330
