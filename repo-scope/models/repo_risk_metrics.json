@@ -1,0 +1,62 @@
+{
+  "model_path": "models/repo_risk.joblib",
+  "rows": 40,
+  "repositories": 40,
+  "train_rows": 30,
+  "test_rows": 10,
+  "train_repositories": 30,
+  "test_repositories": 10,
+  "classes": [
+    "healthy",
+    "risky",
+    "watch"
+  ],
+  "label_sources": [
+    "github_archived_flag",
+    "recent_release_evidence",
+    "stale_release_evidence"
+  ],
+  "feature_importance": {
+    "days_since_last_commit": 0.283119,
+    "commits_90d": 0.224133,
+    "pr_merge_rate_pct": 0.173836,
+    "issue_closure_rate_pct": 0.159222,
+    "bus_factor": 0.107429,
+    "contributors_sampled": 0.019178,
+    "has_tests": 0.016563,
+    "has_ci": 0.01652
+  },
+  "report": {
+    "healthy": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 7.0
+    },
+    "risky": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 2.0
+    },
+    "watch": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 1.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 10.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 10.0
+    }
+  }
+}
