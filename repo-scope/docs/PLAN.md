@@ -18,15 +18,23 @@
 - [x] Tests + CI
 - [x] Docker / Vercel deployment entrypoint
 
-## v0.6 — real ML risk model
+## v0.6 — experimental ML risk intelligence
 
-- [ ] Collect 500+ diverse repository snapshots
-- [ ] Define human labelling rubric (`healthy`, `watch`, `risky`)
-- [ ] Review class balance and leakage
-- [ ] Train/evaluate baseline models
-- [ ] Calibrate probabilities
-- [ ] Store model metadata and feature version
-- [ ] Integrate prediction only after validation
+- [x] Collect 500+ diverse repository snapshots as the first scale milestone
+- [x] Build resumable 100k-catalog / 10k-deep-profile collection pipeline
+- [x] Define an independent human labelling rubric (`healthy`, `watch`, `risky`)
+- [x] Add durable human-label provenance and weak-label override path
+- [x] Review class balance, missingness and leakage automatically
+- [x] Train/evaluate grouped Random Forest baseline
+- [x] Add grouped cross-validation, balanced accuracy and confusion matrices
+- [x] Store dataset hash, model metadata and versioned feature schema
+- [x] Fail closed on incompatible model feature schemas
+- [x] Gate scaled-model inference on minimum support for all three classes
+- [ ] Build a sufficiently large stratified human-reviewed validation subset
+- [ ] Add temporal holdout evaluation
+- [ ] Measure/calibrate probabilities before treating them as confidence
+- [ ] Compare weak-label and human-label performance separately
+- [ ] Promote scaled prediction only after the validation checklist passes
 
 ## v0.7 — durable cloud analytics
 
