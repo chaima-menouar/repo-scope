@@ -11,6 +11,15 @@ def _load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _number(value, default: float = 0.0) -> float:
+    if value is None or value == "":
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def evaluate(progress: dict, quality: dict, metrics: dict, human_comparison: dict) -> dict:
     reasons: list[str] = []
     class_counts = metrics.get("class_counts", {})
@@ -26,27 +35,27 @@ def evaluate(progress: dict, quality: dict, metrics: dict, human_comparison: dic
         if int(class_counts.get(label, 0) or 0) < 50:
             reasons.append(f"class {label} has fewer than 50 labelled repositories")
 
-    if float(cv.get("macro_f1", 0) or 0) < 0.65:
+    if _number(cv.get("macro_f1")) < 0.65:
         reasons.append("grouped cross-validation macro F1 is below 0.65")
-    if float(cv.get("balanced_accuracy", 0) or 0) < 0.65:
+    if _number(cv.get("balanced_accuracy")) < 0.65:
         reasons.append("grouped cross-validation balanced accuracy is below 0.65")
 
     if not temporal.get("available"):
         reasons.append("temporal holdout is not available")
     else:
-        if float(temporal.get("macro_f1", 0) or 0) < 0.60:
+        if _number(temporal.get("macro_f1")) < 0.60:
             reasons.append("temporal holdout macro F1 is below 0.60")
         if temporal.get("missing_test_classes"):
             reasons.append("temporal holdout does not contain all three risk classes")
 
     if calibration.get("status") != "analysis_only_uncalibrated":
         reasons.append("out-of-fold calibration diagnostics are missing")
-    if float(calibration.get("expected_calibration_error_10_bin", 1) or 1) > 0.15:
+    if _number(calibration.get("expected_calibration_error_10_bin"), 1.0) > 0.15:
         reasons.append("expected calibration error is above 0.15")
 
     if human_comparison.get("status") != "ready_for_comparison":
         reasons.append("human-reviewed validation subset is still too small")
-    elif float(human_comparison.get("agreement_rate", 0) or 0) < 0.70:
+    elif _number(human_comparison.get("agreement_rate")) < 0.70:
         reasons.append("weak-label agreement with human review is below 0.70")
 
     warnings = quality.get("warnings") or []
