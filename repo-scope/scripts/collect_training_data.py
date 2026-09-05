@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import argparse
 import csv
+from datetime import datetime, timezone
 from pathlib import Path
 
+from repo_scope.fetch import github_api
 from repo_scope.ml.training import FEATURE_COLUMNS, feature_row
 from repo_scope.profile import RepoProfile
+
+EVIDENCE_COLUMNS = ["archived", "latest_release_age_days", "latest_release_at"]
 
 
 def load_repositories(path: Path) -> list[str]:
@@ -18,6 +22,21 @@ def load_repositories(path: Path) -> list[str]:
     return repositories
 
 
+def _release_evidence(owner: str, repo: str) -> tuple[int | None, str]:
+    release = github_api.get_latest_release(owner, repo)
+    if not release:
+        return None, ""
+    released_at = release.get("published_at") or release.get("created_at") or ""
+    if not released_at:
+        return None, ""
+    try:
+        released = datetime.fromisoformat(released_at.replace("Z", "+00:00"))
+        age_days = max(0, (datetime.now(timezone.utc) - released.astimezone(timezone.utc)).days)
+        return age_days, released_at
+    except (TypeError, ValueError):
+        return None, released_at
+
+
 def collect(repositories: list[str], output: Path) -> tuple[int, list[tuple[str, str]]]:
     rows: list[dict] = []
     failures: list[tuple[str, str]] = []
@@ -25,7 +44,15 @@ def collect(repositories: list[str], output: Path) -> tuple[int, list[tuple[str,
     for repo in repositories:
         try:
             profile = RepoProfile(repo)
-            row = {"repo": repo, **feature_row(profile.stats), "label": ""}
+            release_age, released_at = _release_evidence(profile.owner, profile.repo)
+            row = {
+                "repo": repo,
+                **feature_row(profile.stats),
+                "archived": int(bool(profile.raw["repo_info"].get("archived"))),
+                "latest_release_age_days": "" if release_age is None else release_age,
+                "latest_release_at": released_at,
+                "label": "",
+            }
             rows.append(row)
             print(f"collected {repo}")
         except Exception as exc:  # keep a long batch useful even if one repository fails
@@ -34,7 +61,7 @@ def collect(repositories: list[str], output: Path) -> tuple[int, list[tuple[str,
 
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["repo", *FEATURE_COLUMNS, "label"])
+        writer = csv.DictWriter(handle, fieldnames=["repo", *FEATURE_COLUMNS, *EVIDENCE_COLUMNS, "label"])
         writer.writeheader()
         writer.writerows(rows)
 
