@@ -1,4 +1,4 @@
-name: Dataset bootstrap
+name: Dataset and ML baseline
 
 on:
   push:
@@ -6,6 +6,10 @@ on:
     paths:
       - "repo-scope/data/seed_repositories.txt"
       - "repo-scope/scripts/collect_training_data.py"
+      - "repo-scope/scripts/bootstrap_weak_labels.py"
+      - "repo-scope/scripts/train_risk_model.py"
+      - "repo-scope/src/repo_scope/ml/**"
+      - "repo-scope/src/repo_scope/fetch/github_api.py"
       - "repo-scope/.gitignore"
       - ".github/workflows/dataset.yml"
   workflow_dispatch:
@@ -18,7 +22,7 @@ permissions:
   contents: write
 
 jobs:
-  collect:
+  collect-and-train:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,22 +36,28 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: repo-scope/pyproject.toml
-      - name: Install RepoScope
-        run: pip install -e .
+      - name: Install RepoScope with ML dependencies
+        run: pip install -e ".[ml]"
       - name: Collect repository snapshots
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_MAX_PAGES: "2"
         run: python scripts/collect_training_data.py
-      - name: Commit refreshed dataset
+      - name: Build conservative weak labels
+        run: python scripts/bootstrap_weak_labels.py
+      - name: Train experimental risk baseline
         run: |
-          if [ -z "$(git status --porcelain -- data/repo_risk_unlabelled.csv)" ]; then
-            echo "Dataset unchanged"
+          mkdir -p models
+          python scripts/train_risk_model.py data/repo_risk_training.csv --output models/repo_risk.joblib > models/repo_risk_metrics.json
+      - name: Commit refreshed ML artifacts
+        run: |
+          if [ -z "$(git status --porcelain -- data/repo_risk_unlabelled.csv data/repo_risk_training.csv models/repo_risk.joblib models/repo_risk_metrics.json)" ]; then
+            echo "ML artifacts unchanged"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f data/repo_risk_unlabelled.csv
-          git commit -m "data: refresh repository risk snapshots [skip ci]"
+          git add -f data/repo_risk_unlabelled.csv data/repo_risk_training.csv models/repo_risk.joblib models/repo_risk_metrics.json
+          git commit -m "ml: refresh experimental risk baseline [skip ci]"
           git pull --rebase origin improve/portfolio-ai-cloud
           git push origin HEAD:improve/portfolio-ai-cloud
