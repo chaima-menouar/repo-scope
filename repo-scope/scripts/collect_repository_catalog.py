@@ -20,6 +20,7 @@ FIELDS = [
     "repo", "language", "stars", "forks", "open_issues", "size_kb", "archived",
     "created_at", "updated_at", "pushed_at", "default_branch", "license", "topics",
 ]
+CHECKPOINT_EVERY = 1_000
 
 
 def _headers() -> dict[str, str]:
@@ -65,6 +66,18 @@ def _load_state(path: Path) -> int:
         return max(0, int(json.loads(path.read_text(encoding="utf-8")).get("partition_index", 0)))
     except (ValueError, TypeError, json.JSONDecodeError):
         return 0
+
+
+def _write_checkpoint(
+    *, rows: dict[str, dict[str, str]], output: Path, state_path: Path, partition_index: int, target: int
+) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=FIELDS)
+        writer.writeheader()
+        writer.writerows(list(rows.values())[:target])
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(json.dumps({"partition_index": partition_index}, indent=2) + "\n", encoding="utf-8")
 
 
 def _request(session: requests.Session, query: str, page: int) -> list[dict]:
@@ -115,6 +128,8 @@ def collect(target: int, output: Path, state_path: Path, max_new: int) -> dict[s
     session = requests.Session()
     session.headers.update(_headers())
     added = 0
+    last_checkpoint = 0
+
     while partition_index < len(partitions) and len(rows) < target and added < max_new:
         archived, language, stars, year = partitions[partition_index]
         query = (
@@ -131,6 +146,16 @@ def collect(target: int, output: Path, state_path: Path, max_new: int) -> dict[s
                 if repo and repo not in rows:
                     rows[repo] = {key: str(value) for key, value in record.items()}
                     added += 1
+                    if added - last_checkpoint >= CHECKPOINT_EVERY:
+                        _write_checkpoint(
+                            rows=rows,
+                            output=output,
+                            state_path=state_path,
+                            partition_index=partition_index,
+                            target=target,
+                        )
+                        last_checkpoint = added
+                        print(f"checkpoint: total={len(rows)} added={added}", flush=True)
                     if len(rows) >= target or added >= max_new:
                         break
             if len(rows) >= target or added >= max_new or len(items) < 100:
@@ -138,12 +163,13 @@ def collect(target: int, output: Path, state_path: Path, max_new: int) -> dict[s
             time.sleep(2.1)
         partition_index += 1
 
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=FIELDS)
-        writer.writeheader()
-        writer.writerows(list(rows.values())[:target])
-    state_path.write_text(json.dumps({"partition_index": partition_index}, indent=2) + "\n", encoding="utf-8")
+    _write_checkpoint(
+        rows=rows,
+        output=output,
+        state_path=state_path,
+        partition_index=partition_index,
+        target=target,
+    )
     return {"total": min(len(rows), target), "added": added, "partition_index": partition_index}
 
 
