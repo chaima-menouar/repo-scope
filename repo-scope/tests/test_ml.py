@@ -5,6 +5,10 @@ from repo_scope.ml.labels import assign_weak_label
 def test_weak_labels_require_independent_evidence():
     assert assign_weak_label({"archived": "1", "latest_release_age_days": ""})[0] == "risky"
     assert assign_weak_label({"archived": "0", "latest_release_age_days": "30"})[0] == "healthy"
+    assert assign_weak_label({"archived": "0", "latest_release_age_days": "150"})[0] == "healthy"
+    assert assign_weak_label({"archived": "0", "latest_release_age_days": "151"}) is None
+    assert assign_weak_label({"archived": "0", "latest_release_age_days": "179"}) is None
+    assert assign_weak_label({"archived": "0", "latest_release_age_days": "180"})[0] == "watch"
     assert assign_weak_label({"archived": "0", "latest_release_age_days": "400"})[0] == "watch"
     assert assign_weak_label({"archived": "0", "latest_release_age_days": ""}) is None
 
