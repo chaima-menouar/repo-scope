@@ -1,143 +1,75 @@
 # RepoScope human risk labelling rubric
 
-This rubric defines how a human reviewer should assign `healthy`, `watch`, or `risky` to a repository snapshot without copying RepoScope's deterministic health score, weak-label rule, or ML prediction.
+This rubric defines how an independent human reviewer assigns `healthy`, `watch`, or `risky` to a repository snapshot without copying RepoScope's deterministic health score, weak-label output, or ML prediction.
 
 ## Purpose
 
-Human labels are the independent reference set used to audit weak supervision and, eventually, validate whether the ML model generalizes beyond its automated label sources.
-
-A reviewer should judge the repository **at the snapshot date**, not based on what happened later.
+Human review is the independent reference used to audit weak supervision and determine whether the ML model generalizes beyond its automated label sources. Reviewers judge the repository at the snapshot date, not with hindsight from later events.
 
 ## Blinding rules
 
-Before assigning a label, the reviewer should not be shown:
+Before assigning a label, a reviewer must not be shown:
 
 - RepoScope health score or health label;
 - weak label or weak-label source;
-- ML prediction, probability, or feature importance;
+- ML prediction, probability, confidence, or feature importance;
 - review-queue reasons that reveal weak-label boundary logic;
-- another reviewer's label before making an independent judgement.
+- another reviewer's decision before submitting their own.
 
-The reviewer may inspect public repository evidence that a real maintainer or engineering team could observe, including repository activity, releases, unresolved issues, pull-request flow, contributor continuity, documentation, CI status, tests, deprecation notices, and maintenance statements.
+A reviewer may inspect public repository evidence that a real maintainer or engineering team could observe: maintenance statements, repository activity, releases, unresolved issues, pull-request flow, contributor continuity, documentation, CI status, tests, deprecation notices, and related public context.
 
 ## Labels
 
 ### `healthy`
 
-Use `healthy` when the repository shows credible evidence of ongoing maintenance and low near-term continuity risk.
+Use `healthy` when the repository shows credible ongoing maintenance and low near-term continuity risk. Supporting evidence can include meaningful recent maintenance, an appropriate release cadence, responsive issue/PR handling, contributor continuity, working engineering controls, current documentation, and no abandonment/deprecation signal.
 
-Typical evidence includes several of the following:
-
-- recent, meaningful development or maintenance activity;
-- releases or versioned delivery that appear current for the project's normal cadence;
-- issues and pull requests receiving responses or resolution;
-- more than one active contributor, or a clearly supported single-maintainer project with continuity evidence;
-- CI/tests or other engineering controls that reduce regression risk;
-- documentation that matches the current state of the project;
-- no clear deprecation, archival, abandonment, or replacement notice.
-
-A repository does **not** need to be highly popular or commit every week to be healthy. Mature, stable projects can have a slower cadence.
+A project does not need to be highly popular or commit every week to be healthy. Mature stable projects may have a slower cadence.
 
 ### `watch`
 
-Use `watch` when the repository is still usable or plausibly maintained, but there are material warning signs that deserve monitoring.
+Use `watch` when the repository remains usable or plausibly maintained but shows material warning signs. Examples include a clear slowdown relative to historical cadence, increasingly stale releases, growing unanswered work, concentrated ownership, degrading CI/tests/docs, a transition period, or mixed continuity evidence.
 
-Typical evidence includes one or more of the following:
-
-- maintenance activity has slowed substantially relative to the project's prior cadence;
-- releases are becoming stale while the repository is not explicitly archived;
-- issue or pull-request backlog is growing with limited maintainer response;
-- contributor activity is concentrated in one person with little visible continuity;
-- CI/tests/documentation are incomplete or degrading;
-- maintenance status is ambiguous or the project appears to be in a transition period;
-- there is conflicting evidence: some recent activity exists, but multiple continuity signals are weak.
-
-Use `watch` instead of forcing a confident `healthy` or `risky` label when the evidence is mixed.
+Use `watch` when evidence is genuinely mixed rather than forcing an overconfident extreme label.
 
 ### `risky`
 
-Use `risky` when there is strong evidence that depending on the repository carries substantial maintenance or continuity risk.
+Use `risky` when strong evidence suggests substantial maintenance or continuity risk: explicit archive/deprecation/abandonment, end-of-support statements, prolonged inconsistent inactivity with unresolved work, unattended critical issues/PRs, loss of maintainer base, obsolete dependency/release state without a maintenance path, or practical abandonment despite the repository remaining open.
 
-Typical evidence includes one or more strong signals, especially when combined:
-
-- repository is explicitly archived, deprecated, abandoned, or replaced;
-- maintainers state that support has ended or development has stopped;
-- prolonged inactivity is inconsistent with the project's historical cadence and unresolved work remains;
-- critical issues or pull requests remain unattended for a long period;
-- the project has effectively lost its maintainer/contributor base;
-- release/dependency state is clearly obsolete and there is no credible maintenance path;
-- the repository is still technically open but evidence strongly indicates practical abandonment.
-
-Do not use `risky` merely because a repository is small, unpopular, old, or maintained by one person.
+Do not use `risky` merely because a repository is small, old, unpopular, or single-maintainer.
 
 ## Review procedure
 
-For each candidate repository:
+For each candidate:
 
-1. Record the repository name and snapshot timestamp.
-2. Inspect maintenance/deprecation notices first.
-3. Review recent commits and compare them with the repository's historical cadence.
-4. Inspect releases/tags and whether delivery appears current for this project type.
-5. Inspect issue and pull-request responsiveness, not only raw counts.
-6. Inspect contributor continuity and obvious single-maintainer dependency.
-7. Inspect CI/tests/documentation as supporting evidence.
+1. Confirm repository and snapshot timestamp.
+2. Inspect maintenance, archival, replacement, and deprecation statements.
+3. Compare recent commits with historical cadence.
+4. Inspect release/support cadence.
+5. Inspect issue and PR responsiveness, not only counts.
+6. Inspect contributor continuity.
+7. Use CI/tests/documentation as supporting evidence.
 8. Assign exactly one label: `healthy`, `watch`, or `risky`.
-9. Write a short evidence-based `review_notes` explanation.
-10. Record `reviewer` and `reviewed_at_utc`.
+9. Write concise evidence-based `review_notes`.
+10. Submit under a stable `reviewer` identifier.
 
-## Blind review CLI
+If there is not enough evidence for a defensible judgement, skip the candidate rather than inventing a label.
 
-RepoScope includes an interactive reviewer tool that reads the candidate queue but deliberately hides automation-derived fields such as `review_reason`, weak labels, model predictions, confidence values and health scores.
+## Independent blind review CLI
 
-Run it from `repo-scope/`:
+Run from `repo-scope/`:
 
 ```bash
 python scripts/review_human_labels.py --reviewer reviewer-a --limit 20
 ```
 
-The CLI shows the repository URL and only review-safe evidence fields, then records the human decision in `data/repo_risk_human_labels.csv`. Evidence-based notes and a reviewer identifier are mandatory. Existing durable reviews cannot be overwritten accidentally; replacement must be an explicit adjudication step in code or tooling rather than a silent duplicate.
+The CLI hides automation-derived fields and writes each independent decision to:
 
-The tool does **not** inspect the repository or decide the label automatically. The human reviewer must inspect public evidence and apply this rubric independently.
+`data/repo_risk_human_review_decisions.csv`
 
-## Evidence hierarchy
+Multiple reviewers may review the same repository independently. The same reviewer cannot silently overwrite their own earlier decision; a correction requires an explicit replacement operation. Decisions from different reviewers are preserved side-by-side.
 
-Prefer direct repository evidence over proxies:
-
-1. explicit maintainer statement or archive/deprecation state;
-2. concrete maintenance activity and response patterns;
-3. release/support cadence;
-4. contributor continuity;
-5. engineering-practice signals;
-6. popularity metrics only as context, never as the deciding signal.
-
-Stars, forks, repository age, programming language, and organization prestige must not determine the label.
-
-## Ambiguous cases
-
-If the evidence is genuinely mixed, prefer `watch` and explain the conflict in `review_notes`.
-
-If there is too little evidence to make a defensible judgement, do not invent a label. Leave the repository unreviewed until sufficient evidence is available.
-
-## Quality-control protocol
-
-For the validation subset used to judge model quality:
-
-- use at least two independent reviewers where practical;
-- keep reviewers blind to automated labels and model output;
-- measure raw agreement and Cohen's kappa when two reviewers label the same subset;
-- adjudicate disagreements using the written evidence, not majority intuition alone;
-- preserve the original reviewer decisions when producing an adjudicated label so disagreement remains auditable;
-- stratify reviewed repositories across language, popularity, archived/active state, and maintenance cadence.
-
-Human-reviewed labels should be evaluated separately from weak labels. A model that performs well only on weak labels is not considered validated.
-
-## Durable label registry
-
-Approved human labels belong in:
-
-`data/repo_risk_human_labels.csv`
-
-Expected fields:
+Raw decision fields are:
 
 - `repo`
 - `human_label`
@@ -145,6 +77,55 @@ Expected fields:
 - `reviewer`
 - `reviewed_at_utc`
 
-Allowed labels are exactly `healthy`, `watch`, and `risky`.
+The tool does not inspect repositories or choose labels automatically. Human evidence review is required.
 
-The generated review queue is only a candidate list and must never be treated as the durable source of human ground truth.
+## Adjudication
+
+Raw independent decisions are not used directly as model ground truth. Produce the durable adjudicated registry with:
+
+```bash
+python scripts/adjudicate_human_reviews.py
+```
+
+The adjudicator requires at least two independent reviewers per repository. It writes a durable label only when there is a strict majority. Ties and unresolved disagreement remain excluded instead of being guessed.
+
+Adjudicated labels are written to:
+
+`data/repo_risk_human_labels.csv`
+
+Original decisions remain preserved in `data/repo_risk_human_review_decisions.csv`, so disagreement stays auditable.
+
+## Evidence hierarchy
+
+Prefer direct evidence over proxies:
+
+1. explicit maintainer statement or archive/deprecation state;
+2. concrete maintenance activity and response patterns;
+3. release/support cadence;
+4. contributor continuity;
+5. engineering-practice signals;
+6. popularity only as context, never as the deciding signal.
+
+Stars, forks, repository age, language, and organization prestige must not determine the label.
+
+## Quality-control protocol
+
+For validation used to judge model quality:
+
+- use at least two independent reviewers per repository where practical;
+- keep reviewers blind to automation and to each other's decisions;
+- preserve all raw decisions;
+- measure reviewer agreement separately from weak-vs-human agreement;
+- route disagreements to explicit adjudication rather than silent overwrite;
+- stratify reviewed repositories across language, popularity, archived/active state, and maintenance cadence;
+- never treat weak-label performance alone as independent validation.
+
+## Ground-truth boundary
+
+`data/repo_risk_human_review_queue.csv` is only a candidate list.
+
+`data/repo_risk_human_review_decisions.csv` contains independent raw reviewer decisions.
+
+`data/repo_risk_human_labels.csv` contains only adjudicated durable labels eligible to enter the combined training/validation path.
+
+Allowed labels are exactly `healthy`, `watch`, and `risky`. RepoScope must never fabricate human decisions or automatically convert weak labels into human ground truth.
