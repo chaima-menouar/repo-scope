@@ -7,6 +7,7 @@ on:
       - "repo-scope/data/seed_repositories.txt"
       - "repo-scope/scripts/discover_seed_repositories.py"
       - "repo-scope/scripts/collect_repository_catalog.py"
+      - "repo-scope/scripts/build_deep_manifest.py"
       - "repo-scope/scripts/collect_training_data.py"
       - "repo-scope/scripts/bootstrap_weak_labels.py"
       - "repo-scope/scripts/export_label_review_queue.py"
@@ -57,21 +58,13 @@ jobs:
             --state data/repository_catalog_100k.state.json \
             --max-new 5000
 
-      - name: Derive deep-analysis manifest from catalog
+      - name: Derive stratified deep-analysis manifest from catalog
         run: |
-          python - <<'PY'
-          import csv
-          from pathlib import Path
-
-          catalog = Path('data/repository_catalog_100k.csv')
-          output = Path('data/seed_repositories_100k.txt')
-          rows = list(csv.DictReader(catalog.open(encoding='utf-8', newline=''))) if catalog.exists() else []
-          active = sorted((r for r in rows if r.get('archived') != '1'), key=lambda r: r.get('repo', ''))
-          archived = sorted((r for r in rows if r.get('archived') == '1'), key=lambda r: r.get('repo', ''))
-          deep = active[:8000] + archived[:2000]
-          output.write_text('\n'.join(r['repo'] for r in deep if r.get('repo')) + '\n', encoding='utf-8')
-          print(f'deep manifest contains {len(deep)} repositories from catalog of {len(rows)}')
-          PY
+          python scripts/build_deep_manifest.py \
+            --catalog data/repository_catalog_100k.csv \
+            --output data/seed_repositories_100k.txt \
+            --target 10000 \
+            --archived-fraction 0.20
 
       - name: Collect next deep repository batch
         env:
