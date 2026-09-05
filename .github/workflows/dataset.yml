@@ -13,6 +13,8 @@ on:
       - "repo-scope/scripts/bootstrap_weak_labels.py"
       - "repo-scope/scripts/export_label_review_queue.py"
       - "repo-scope/scripts/merge_human_labels.py"
+      - "repo-scope/scripts/compare_human_weak_labels.py"
+      - "repo-scope/scripts/evaluate_model_readiness.py"
       - "repo-scope/scripts/train_risk_model.py"
       - "repo-scope/scripts/report_dataset_quality.py"
       - "repo-scope/scripts/generate_model_card.py"
@@ -76,10 +78,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_MAX_PAGES: "1"
         run: |
-          # The ML collector reuses catalog metadata and omits the languages API
-          # call, reducing deep collection to roughly six core REST requests per
-          # repository. A 130-repository batch keeps a margin below the built-in
-          # Actions token's core API budget while improving throughput.
           python scripts/collect_training_data.py \
             --repos data/seed_repositories_100k.txt \
             --catalog data/repository_catalog_100k.csv \
@@ -109,6 +107,13 @@ jobs:
             --weak data/repo_risk_training_100k.csv \
             --human data/repo_risk_human_labels.csv \
             --output data/repo_risk_training_combined_100k.csv
+
+      - name: Compare weak labels with human review
+        run: |
+          python scripts/compare_human_weak_labels.py \
+            --weak data/repo_risk_training_100k.csv \
+            --human data/repo_risk_human_labels.csv \
+            --output data/repo_risk_human_weak_comparison.json
 
       - name: Generate dataset quality report
         run: |
@@ -183,6 +188,7 @@ jobs:
               'human_review_queue': count_csv('data/repo_risk_human_review_queue.csv'),
               'label_type': 'weak_labels_plus_optional_durable_human_review',
               'quality_report': 'data/repo_risk_100k_quality.json',
+              'human_weak_comparison': 'data/repo_risk_human_weak_comparison.json',
               'model_status': 'experimental_weak_supervision',
               'retrain_policy': 'all_classes_min_20_first_model_at_200_then_each_500_label_milestone',
           }
@@ -202,6 +208,15 @@ jobs:
             echo "No eligible scaled model metrics yet; model card will be generated at the first training milestone"
           fi
 
+      - name: Evaluate scaled-model promotion readiness
+        run: |
+          python scripts/evaluate_model_readiness.py \
+            --progress data/repo_risk_100k_progress.json \
+            --quality data/repo_risk_100k_quality.json \
+            --metrics models/repo_risk_100k_metrics.json \
+            --human-comparison data/repo_risk_human_weak_comparison.json \
+            --output models/repo_risk_100k_readiness.json
+
       - name: Commit dataset progress
         run: |
           git config user.name "github-actions[bot]"
@@ -215,8 +230,10 @@ jobs:
             data/repo_risk_training_combined_100k.csv \
             data/repo_risk_human_review_queue.csv \
             data/repo_risk_human_labels.csv \
+            data/repo_risk_human_weak_comparison.json \
             data/repo_risk_100k_quality.json \
-            data/repo_risk_100k_progress.json
+            data/repo_risk_100k_progress.json \
+            models/repo_risk_100k_readiness.json
           if [ -f models/repo_risk_100k.joblib ]; then git add -f models/repo_risk_100k.joblib models/repo_risk_100k_metrics.json; fi
           if [ -f models/repo_risk_100k_model_card.md ]; then git add -f models/repo_risk_100k_model_card.md; fi
           if git diff --cached --quiet; then
