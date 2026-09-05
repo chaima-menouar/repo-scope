@@ -102,7 +102,7 @@ jobs:
             --training data/repo_risk_training_100k.csv \
             --output data/repo_risk_100k_quality.json
 
-      - name: Train experimental risk baseline when dataset changed
+      - name: Train experimental risk baseline at meaningful milestones
         run: |
           read ROWS PREVIOUS <<EOF
           $(python - <<'PY'
@@ -122,11 +122,17 @@ jobs:
           )
           EOF
           echo "Labelled rows: $ROWS (previous committed: $PREVIOUS)"
-          if [ "$ROWS" -ge 200 ] && { [ "$ROWS" -ne "$PREVIOUS" ] || [ ! -f models/repo_risk_100k.joblib ]; }; then
+          SHOULD_TRAIN=0
+          if [ "$ROWS" -ge 200 ] && [ ! -f models/repo_risk_100k.joblib ]; then
+            SHOULD_TRAIN=1
+          elif [ "$ROWS" -ge 500 ] && [ $((ROWS / 500)) -gt $((PREVIOUS / 500)) ]; then
+            SHOULD_TRAIN=1
+          fi
+          if [ "$SHOULD_TRAIN" -eq 1 ]; then
             mkdir -p models
             python scripts/train_risk_model.py data/repo_risk_training_100k.csv --output models/repo_risk_100k.joblib > models/repo_risk_100k_metrics.json
           else
-            echo "Skipping model refresh: not enough rows or dataset unchanged"
+            echo "Skipping model refresh until the next 500-label milestone"
           fi
 
       - name: Write dataset progress summary
@@ -152,6 +158,7 @@ jobs:
               'label_type': 'conservative_weak_labels_with_maintenance_evidence',
               'quality_report': 'data/repo_risk_100k_quality.json',
               'model_status': 'experimental_weak_supervision',
+              'retrain_policy': 'first_model_at_200_then_each_500_label_milestone',
           }
           Path('data/repo_risk_100k_progress.json').write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
           print(payload)
