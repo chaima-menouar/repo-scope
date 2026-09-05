@@ -16,6 +16,7 @@ FEATURE_COLUMNS = [
     "has_tests",
 ]
 EXPECTED_LABELS = {"healthy", "watch", "risky"}
+LABEL_ORDER = ["healthy", "watch", "risky"]
 
 
 def _validate_training_frame(frame) -> None:
@@ -65,7 +66,13 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         import joblib
         import pandas as pd
         import sklearn
-        from sklearn.metrics import accuracy_score, classification_report, f1_score
+        from sklearn.metrics import (
+            accuracy_score,
+            balanced_accuracy_score,
+            classification_report,
+            confusion_matrix,
+            f1_score,
+        )
         from sklearn.model_selection import GroupShuffleSplit, StratifiedGroupKFold, cross_val_predict
     except ImportError as exc:
         raise RuntimeError("Install ML dependencies with: pip install -e .[ml]") from exc
@@ -89,9 +96,11 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
 
     cv = StratifiedGroupKFold(n_splits=cv_folds, shuffle=True, random_state=42)
     cv_predictions = cross_val_predict(_model(), x, y, groups=groups, cv=cv, n_jobs=-1)
-    cv_report = classification_report(y, cv_predictions, output_dict=True, zero_division=0)
+    cv_report = classification_report(y, cv_predictions, labels=LABEL_ORDER, output_dict=True, zero_division=0)
     cv_accuracy = float(accuracy_score(y, cv_predictions))
-    cv_macro_f1 = float(f1_score(y, cv_predictions, average="macro", zero_division=0))
+    cv_balanced_accuracy = float(balanced_accuracy_score(y, cv_predictions))
+    cv_macro_f1 = float(f1_score(y, cv_predictions, labels=LABEL_ORDER, average="macro", zero_division=0))
+    cv_confusion_matrix = confusion_matrix(y, cv_predictions, labels=LABEL_ORDER).tolist()
 
     warning_reasons = []
     if len(frame) < 100:
@@ -100,6 +109,8 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         warning_reasons.append("at least one class has fewer than 20 repositories")
     if cv_accuracy >= 0.99:
         warning_reasons.append("cross-validation accuracy is unusually high for a small weakly-labelled dataset")
+    if cv_balanced_accuracy < 0.60:
+        warning_reasons.append("balanced accuracy is below 0.60, indicating weak minority-class performance")
     evaluation_warning = None
     if warning_reasons:
         evaluation_warning = (
@@ -125,7 +136,20 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
     model = _model()
     model.fit(x_train, y_train)
     predictions = model.predict(x_test)
-    heldout_report = classification_report(y_test, predictions, output_dict=True, zero_division=0)
+    heldout_report = classification_report(
+        y_test,
+        predictions,
+        labels=LABEL_ORDER,
+        output_dict=True,
+        zero_division=0,
+    )
+    heldout_accuracy = float(accuracy_score(y_test, predictions))
+    heldout_balanced_accuracy = float(balanced_accuracy_score(y_test, predictions))
+    heldout_macro_f1 = float(
+        f1_score(y_test, predictions, labels=LABEL_ORDER, average="macro", zero_division=0)
+    )
+    heldout_confusion_matrix = confusion_matrix(y_test, predictions, labels=LABEL_ORDER).tolist()
+
     feature_importance = {
         feature: round(float(importance), 6)
         for feature, importance in sorted(
@@ -186,9 +210,20 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         "cross_validation": {
             "strategy": "stratified_group_k_fold",
             "folds": cv_folds,
+            "labels": LABEL_ORDER,
             "accuracy": round(cv_accuracy, 6),
+            "balanced_accuracy": round(cv_balanced_accuracy, 6),
             "macro_f1": round(cv_macro_f1, 6),
+            "confusion_matrix": cv_confusion_matrix,
             "report": cv_report,
+        },
+        "heldout": {
+            "labels": LABEL_ORDER,
+            "accuracy": round(heldout_accuracy, 6),
+            "balanced_accuracy": round(heldout_balanced_accuracy, 6),
+            "macro_f1": round(heldout_macro_f1, 6),
+            "confusion_matrix": heldout_confusion_matrix,
+            "report": heldout_report,
         },
         "heldout_report": heldout_report,
         "evaluation_warning": evaluation_warning,
