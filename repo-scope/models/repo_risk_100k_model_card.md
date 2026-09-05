@@ -11,22 +11,22 @@ RepoScope uses this model to explore whether repository-maintenance risk can be 
 - Catalog target: 100000
 - Catalog repositories collected: 40000
 - Deep-profile target: 10000
-- Deep snapshots collected: 913
-- Labelled snapshots: 464
+- Deep snapshots collected: 1027
+- Labelled snapshots: 550
 - Human-review queue: 250
-- Training repositories in latest model: 464
+- Training repositories in latest model: 550
 
 ### Label distribution
 
-- `healthy`: 339
-- `risky`: 80
-- `watch`: 45
+- `healthy`: 396
+- `risky`: 105
+- `watch`: 49
 
 ### Label provenance
 
-- `recent_release_evidence`: 339
-- `github_archived_flag`: 80
-- `stale_release_evidence`: 45
+- `recent_release_evidence`: 396
+- `github_archived_flag`: 105
+- `stale_release_evidence`: 49
 
 Weak labels are based on independent GitHub maintenance evidence. RepoScope's deterministic health score is never used as the training target.
 
@@ -36,40 +36,40 @@ Weak labels are based on independent GitHub maintenance evidence. RepoScope's de
 - Feature schema: `reposcope-risk-features-v1`
 - Artifact fit strategy: refit_on_all_rows_after_isolated_evaluation
 - Source CSV: `data/repo_risk_training_combined_100k.csv`
-- Dataset SHA-256: `ac9767c61f2a84f158c99ae2872aa7609b78e95ec8c843e41a67b337f20b2a20`
-- Trained at UTC: 2026-09-05T15:34:13.597808+00:00
+- Dataset SHA-256: `c35eb7d8e2a28a293a93c557b068a4cafd6ace069759b5c6cd21f2ab439a14a7`
+- Trained at UTC: 2026-09-05T15:37:14.973996+00:00
 - scikit-learn: 1.9.0
 
 ## Evaluation
 
 - Cross-validation strategy: stratified_group_k_fold
 - Cross-validation folds: 5
-- Cross-validation accuracy: 0.838362
-- Cross-validation balanced accuracy: 0.750422
-- Cross-validation macro F1: 0.74392
-- Grouped holdout train repositories: 348
-- Grouped holdout test repositories: 116
-- Holdout accuracy: 0.862069
-- Holdout balanced accuracy: 0.820924
-- Holdout macro F1: 0.810811
+- Cross-validation accuracy: 0.834545
+- Cross-validation balanced accuracy: 0.740414
+- Cross-validation macro F1: 0.739095
+- Grouped holdout train repositories: 412
+- Grouped holdout test repositories: 138
+- Holdout accuracy: 0.826087
+- Holdout balanced accuracy: 0.772184
+- Holdout macro F1: 0.762675
 
 ### Temporal holdout
 
 - Available: yes
 - Strategy: newest_25pct_repositories_by_snapshot_time
-- Cutoff UTC: 2026-09-05T15:33:15.237116+00:00
-- Balanced accuracy: 0.785185
-- Macro F1: 0.783387
+- Cutoff UTC: 2026-09-05T15:35:48.451922+00:00
+- Balanced accuracy: 0.530327
+- Macro F1: 0.51873
 - Missing test classes: []
 
 ### Probability calibration diagnostics
 
 - Status: analysis_only_uncalibrated
 - Source: repository-grouped out-of-fold probabilities
-- Log loss: 0.415699
-- Multiclass Brier score: 0.231644
-- Expected calibration error (10 bins): 0.036407
-- Mean confidence: 0.80714
+- Log loss: 0.406114
+- Multiclass Brier score: 0.228287
+- Expected calibration error (10 bins): 0.042362
+- Mean confidence: 0.800833
 
 The probability diagnostics are measured from repository-grouped out-of-fold predictions. They are diagnostic evidence only; RepoScope does not describe the probabilities as calibrated confidence until independent human-reviewed validation supports that claim.
 
@@ -77,40 +77,40 @@ The probability diagnostics are measured from repository-grouped out-of-fold pre
 
 | actual \ predicted | healthy | watch | risky |
 | --- | ---: | ---: | ---: |
-| healthy | 306 | 1 | 32 |
-| watch | 5 | 32 | 8 |
-| risky | 18 | 11 | 51 |
+| healthy | 357 | 0 | 39 |
+| watch | 6 | 32 | 11 |
+| risky | 22 | 13 | 70 |
 
 ### Grouped holdout confusion matrix
 
 | actual \ predicted | healthy | watch | risky |
 | --- | ---: | ---: | ---: |
-| healthy | 69 | 0 | 8 |
-| watch | 0 | 11 | 4 |
-| risky | 2 | 2 | 20 |
+| healthy | 82 | 0 | 12 |
+| watch | 3 | 13 | 3 |
+| risky | 3 | 3 | 19 |
 
 ### Temporal holdout confusion matrix
 
 | actual \ predicted | healthy | watch | risky |
 | --- | ---: | ---: | ---: |
-| healthy | 25 | 0 | 5 |
-| watch | 1 | 8 | 1 |
-| risky | 3 | 2 | 13 |
+| healthy | 46 | 0 | 8 |
+| watch | 1 | 0 | 2 |
+| risky | 4 | 2 | 17 |
 
 ### Worst out-of-fold failure slices
 
 **language**
-- `JavaScript` — n=6, accuracy=0.5, errors=3
-- `Go` — n=8, accuracy=0.625, errors=3
-- `C++` — n=9, accuracy=0.666667, errors=3
+- `JavaScript` — n=10, accuracy=0.4, errors=6
+- `Java` — n=19, accuracy=0.631579, errors=7
+- `Ruby` — n=12, accuracy=0.666667, errors=4
 **repository_size**
-- `medium_10mb_100mb` — n=45, accuracy=0.711111, errors=13
-- `tiny_lt_1mb` — n=35, accuracy=0.8, errors=7
-- `small_1mb_10mb` — n=35, accuracy=0.828571, errors=6
+- `tiny_lt_1mb` — n=53, accuracy=0.754717, errors=13
+- `medium_10mb_100mb` — n=74, accuracy=0.756757, errors=18
+- `small_1mb_10mb` — n=61, accuracy=0.836066, errors=10
 **maintenance_style**
-- `archived` — n=80, accuracy=0.6375, errors=29
-- `recent_active` — n=365, accuracy=0.876712, errors=45
-- `stale_active` — n=19, accuracy=0.947368, errors=1
+- `archived` — n=105, accuracy=0.666667, errors=35
+- `recent_active` — n=425, accuracy=0.868235, errors=56
+- `stale_active` — n=20, accuracy=1.0, errors=0
 
 Slice context such as language and repository size is retained only for evaluation and is not part of the risk model feature vector.
 

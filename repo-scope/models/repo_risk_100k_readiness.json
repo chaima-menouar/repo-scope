@@ -2,8 +2,8 @@
   "promotion_status": "blocked",
   "eligible": false,
   "blocking_reasons": [
-    "fewer than 1000 deep repository snapshots collected",
     "class watch has fewer than 50 labelled repositories",
+    "temporal holdout macro F1 is below 0.60",
     "human-reviewed validation subset is still too small"
   ],
   "policy": {
