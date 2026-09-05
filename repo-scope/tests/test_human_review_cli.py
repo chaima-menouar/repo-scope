@@ -32,60 +32,67 @@ def test_visible_evidence_hides_automation_fields():
     assert "health_score" not in evidence
 
 
-def test_pending_reviews_excludes_already_reviewed_repositories():
+def test_pending_reviews_is_reviewer_specific():
     queue = [{"repo": "org/a"}, {"repo": "org/b"}]
-    registry = [{"repo": "org/a", "human_label": "healthy"}]
+    decisions = [
+        {"repo": "org/a", "human_label": "healthy", "reviewer": "reviewer-a"},
+        {"repo": "org/b", "human_label": "watch", "reviewer": "reviewer-b"},
+    ]
 
-    pending = pending_reviews(queue, registry)
+    pending_for_a = pending_reviews(queue, decisions, "reviewer-a")
+    pending_for_b = pending_reviews(queue, decisions, "reviewer-b")
 
-    assert [row["repo"] for row in pending] == ["org/b"]
+    assert [row["repo"] for row in pending_for_a] == ["org/b"]
+    assert [row["repo"] for row in pending_for_b] == ["org/a"]
 
 
 def test_save_review_requires_provenance_and_notes(tmp_path):
-    registry = tmp_path / "human.csv"
+    decisions = tmp_path / "decisions.csv"
 
     with pytest.raises(ValueError, match="Reviewer is required"):
-        save_review(registry, "org/a", "healthy", "recent activity", "")
+        save_review(decisions, "org/a", "healthy", "recent activity", "")
 
     with pytest.raises(ValueError, match="notes are required"):
-        save_review(registry, "org/a", "healthy", "", "reviewer-a")
+        save_review(decisions, "org/a", "healthy", "", "reviewer-a")
 
 
-def test_save_review_writes_durable_registry_and_blocks_accidental_overwrite(tmp_path):
-    registry = tmp_path / "human.csv"
+def test_save_review_preserves_independent_reviewer_decisions(tmp_path):
+    decisions = tmp_path / "decisions.csv"
 
     save_review(
-        registry,
+        decisions,
         "org/a",
         "watch",
         "mixed maintenance evidence",
         "reviewer-a",
         reviewed_at_utc="2026-09-05T10:00:00+00:00",
     )
-
-    rows = list(csv.DictReader(registry.open(encoding="utf-8")))
-    assert rows == [
-        {
-            "repo": "org/a",
-            "human_label": "watch",
-            "review_notes": "mixed maintenance evidence",
-            "reviewer": "reviewer-a",
-            "reviewed_at_utc": "2026-09-05T10:00:00+00:00",
-        }
-    ]
-
-    with pytest.raises(ValueError, match="already has a durable human review"):
-        save_review(registry, "org/a", "risky", "changed mind", "reviewer-a")
-
     save_review(
-        registry,
+        decisions,
         "org/a",
         "risky",
-        "adjudicated with stronger abandonment evidence",
+        "strong abandonment evidence",
         "reviewer-b",
         reviewed_at_utc="2026-09-05T11:00:00+00:00",
+    )
+
+    rows = list(csv.DictReader(decisions.open(encoding="utf-8")))
+    assert len(rows) == 2
+    assert {row["reviewer"] for row in rows} == {"reviewer-a", "reviewer-b"}
+
+    with pytest.raises(ValueError, match="already has a decision"):
+        save_review(decisions, "org/a", "healthy", "changed mind", "reviewer-a")
+
+    save_review(
+        decisions,
+        "org/a",
+        "healthy",
+        "deliberate correction after re-checking evidence",
+        "reviewer-a",
+        reviewed_at_utc="2026-09-05T12:00:00+00:00",
         replace=True,
     )
-    rows = list(csv.DictReader(registry.open(encoding="utf-8")))
-    assert rows[0]["human_label"] == "risky"
-    assert rows[0]["reviewer"] == "reviewer-b"
+    rows = list(csv.DictReader(decisions.open(encoding="utf-8")))
+    corrected = next(row for row in rows if row["reviewer"] == "reviewer-a")
+    assert corrected["human_label"] == "healthy"
+    assert len(rows) == 2
