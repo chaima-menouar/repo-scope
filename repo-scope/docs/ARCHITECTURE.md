@@ -11,7 +11,7 @@ RepoProfile / FastAPI
       +---- GitHub REST client
       |        |- token auth
       |        |- Link-header pagination
-      |        |- primary/secondary rate-limit errors
+      |        |- rate-limit retry/wait policy
       |        `- TTL JSON cache
       |
       +---- Analysis engine
@@ -24,8 +24,8 @@ RepoProfile / FastAPI
       |
       +---- Intelligence layer
       |        |- structured deterministic diagnosis
-      |        |- optional OpenAI enhancement
-      |        `- optional experimental ML inference
+      |        |- optional LLM enhancement
+      |        `- gated experimental ML inference
       |
       `---- Output
                |- responsive dashboard
@@ -34,13 +34,16 @@ RepoProfile / FastAPI
                `- CLI export
 ```
 
-## Offline ML flow
+## Offline ML flow — v0.6 research snapshot
 
 ```text
-Balanced public repository seed list
+60,000-repository catalog
       |
       v
-GitHub snapshot collection
+Stratified deep sampling
+      |
+      v
+1,267 timestamped deep snapshots
       |
       +--> 8 model features
       |
@@ -48,20 +51,68 @@ GitHub snapshot collection
              |- archived flag
              `- latest release age
       |
-      v
-Conservative weak-label bootstrap
-      |
-      v
-Repository-group train/test split
-      |
-      v
-Random Forest baseline
-      |
-      +--> joblib model artifact
-      `--> evaluation metrics + feature importance
+      +------------------------------+
+      |                              |
+      v                              v
+conservative weak labels      blind human-review queue
+697 labelled snapshots        durable review registry
+      |                              |
+      +---------------+--------------+
+                      v
+             combined training path
+                      |
+       dataset quality + leakage checks
+                      |
+       repository-grouped cross-validation
+       + grouped holdout
+       + chronological holdout
+       + calibration diagnostics
+       + failure-slice diagnostics
+                      |
+                      v
+             Random Forest artifact
+                      |
+          machine-readable readiness
+                      |
+        explicit manual promotion only
 ```
 
-The experimental ML model never uses RepoScope's health score to construct its labels. Repositories without enough independent labeling evidence are skipped instead of guessed.
+The catalog collection was intentionally stopped at the 60,000-repository milestone. Historical artifact names containing `100k` remain for compatibility and do not represent the collected row count.
+
+The experimental ML model never uses RepoScope's deterministic health score to construct its labels. Repositories without enough independent labeling evidence are skipped instead of guessed. Human labels are a separate, durable source of evidence and are never synthesized by automation.
+
+## Model feature boundary
+
+The versioned feature contract `reposcope-risk-features-v1` contains exactly:
+
+- `days_since_last_commit`
+- `bus_factor`
+- `issue_closure_rate_pct`
+- `pr_merge_rate_pct`
+- `commits_90d`
+- `contributors_sampled`
+- `has_ci`
+- `has_tests`
+
+Language, stars, size and maintenance-style metadata may be retained for failure-slice diagnostics, but they are not model features. Inference fails closed on incompatible feature schemas.
+
+## Evaluation boundary
+
+Repository identity is the split unit so a repository cannot leak across train/evaluation partitions. The training pipeline uses repository-grouped out-of-fold evaluation, a grouped holdout and a chronological holdout on newer repositories. Probability outputs are measured with log loss, multiclass Brier score and expected calibration error, but remain analysis-only until independent human validation supports production calibration.
+
+The final 697-row weak-supervision model reports approximately 81.0% grouped-CV macro F1 and 81.3% balanced accuracy. These are experimental weak-label metrics, not independently validated production accuracy.
+
+## Promotion boundary
+
+The scaled model is not promoted merely because an artifact exists. Default inference requires all of the following:
+
+1. sufficient support for all three classes;
+2. compatible feature schema;
+3. machine-readable readiness eligibility;
+4. sufficient independent blind human review;
+5. explicit manual promotion approval.
+
+At the final v0.6 research snapshot, automated technical gates pass but promotion remains blocked by the missing independent human-reviewed validation subset. The deterministic health score therefore remains the primary explainable product signal.
 
 ## Health score
 
@@ -78,24 +129,24 @@ Archived repositories are capped because their maintenance status is explicit.
 
 ## Cloud / DevOps readiness
 
-This is a separate repository-delivery score. It detects CI/CD, tests, container definitions, infrastructure as code, dependency lockfiles and deployment configuration. It is intentionally described as repository readiness rather than proof that a live cloud deployment is secure or production certified.
+This is a separate repository-delivery score. It detects CI/CD, tests, container definitions, infrastructure as code, dependency lockfiles and deployment configuration. It describes repository readiness rather than proof that a live deployment is secure or production certified.
 
 ## Sampling strategy
 
-Interactive analysis limits pagination with `GITHUB_MAX_PAGES` (default 3 pages, up to 100 items/page). That protects response time and API quota. The UI labels activity/issue/PR/contributor data as sampled where appropriate.
+Interactive analysis limits pagination with `GITHUB_MAX_PAGES` (default 3 pages, up to 100 items/page). This protects response time and API quota. The UI labels activity/issue/PR/contributor data as sampled where appropriate.
 
-The automated ML collector currently uses a smaller page cap for breadth across repositories. Dataset rows therefore represent comparable snapshots, not exhaustive repository histories.
+The offline research collector favors breadth across repositories and uses bounded, resumable batches. Snapshot rows are comparable sampled observations, not exhaustive repository histories.
 
 ## Cache
 
-Each endpoint payload is stored as a TTL JSON object. Local runs write under `db/`. On Vercel, RepoScope writes to `/tmp/repo_scope_cache`; this is a warm-instance optimization, not durable storage.
+Each endpoint payload is stored as a TTL JSON object. Local runs write under `db/`. Lightweight serverless deployments may use ephemeral storage; this is a warm-instance optimization, not durable storage.
 
-A later cloud data layer can replace this cache with DynamoDB/Postgres without changing the analysis modules.
+A later cloud data layer can replace the cache with DynamoDB/Postgres without changing the analysis modules.
 
 ## AI boundary
 
-The deterministic structured diagnosis is always available and includes evidence, risks, strengths and recommended actions. If an OpenAI key is configured, the external model adds a concise narrative over normalized aggregate metrics; it does not replace the deterministic health score or invent repository measurements.
+The deterministic structured diagnosis is always available and includes evidence, risks, strengths and recommended actions. If an external LLM key is configured, the model adds a concise narrative over normalized aggregate metrics; it does not replace the deterministic health score or invent repository measurements.
 
-## ML boundary
+## Deployment boundary
 
-The model output is explicitly marked `experimental_weak_supervision`. Inference fails closed when the model artifact or optional ML dependencies are unavailable. Docker images install the ML dependencies and include the generated artifact; lighter deployments can continue using the deterministic analytics and AI fallback without the model.
+Docker, CI and cloud deployment documentation are part of the repository, but production deployment is intentionally outside the v0.6 completion step. No deployment claim should be inferred from repository readiness signals alone.
