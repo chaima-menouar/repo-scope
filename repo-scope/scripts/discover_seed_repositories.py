@@ -23,16 +23,11 @@ def _headers() -> dict[str, str]:
     return headers
 
 
-def discover(target: int) -> list[str]:
-    repos: dict[str, None] = {}
-    session = requests.Session()
-    session.headers.update(_headers())
-
-    # Each query is capped by GitHub search at 1,000 accessible results, so we
-    # deliberately partition by language and star range for broad coverage.
+def _discover_partition(session: requests.Session, *, archived: bool, target: int, seen: set[str]) -> list[str]:
+    found: list[str] = []
     for language in LANGUAGES:
         for stars in STAR_BUCKETS:
-            query = f"language:{language} stars:{stars} fork:false archived:false"
+            query = f"language:{language} stars:{stars} fork:false archived:{str(archived).lower()}"
             for page in range(1, 11):
                 response = session.get(
                     API,
@@ -41,8 +36,7 @@ def discover(target: int) -> list[str]:
                 )
                 if response.status_code == 403 and "rate limit" in response.text.lower():
                     reset = int(response.headers.get("X-RateLimit-Reset", "0") or 0)
-                    sleep_for = max(5, min(70, reset - int(time.time()) + 2))
-                    time.sleep(sleep_for)
+                    time.sleep(max(5, min(70, reset - int(time.time()) + 2)))
                     continue
                 response.raise_for_status()
                 items = response.json().get("items", [])
@@ -50,23 +44,40 @@ def discover(target: int) -> list[str]:
                     break
                 for item in items:
                     full_name = item.get("full_name")
-                    if full_name:
-                        repos.setdefault(full_name, None)
-                        if len(repos) >= target:
-                            return list(repos)
+                    if full_name and full_name not in seen:
+                        seen.add(full_name)
+                        found.append(full_name)
+                        if len(found) >= target:
+                            return found
                 if len(items) < 100:
                     break
-                time.sleep(1.2)  # search API has a separate, tighter rate limit
-    return list(repos)
+                time.sleep(1.2)
+    return found
+
+
+def discover(target: int, archived_fraction: float = 0.20) -> list[str]:
+    session = requests.Session()
+    session.headers.update(_headers())
+    seen: set[str] = set()
+
+    archived_target = max(1, round(target * archived_fraction))
+    active_target = target - archived_target
+    active = _discover_partition(session, archived=False, target=active_target, seen=seen)
+    archived = _discover_partition(session, archived=True, target=archived_target, seen=seen)
+    return active + archived
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Discover a diverse public GitHub repository seed set.")
     parser.add_argument("--target", type=int, default=10_000)
+    parser.add_argument("--archived-fraction", type=float, default=0.20)
     parser.add_argument("--output", default="data/seed_repositories_10k.txt")
     args = parser.parse_args()
 
-    repos = discover(args.target)
+    if not 0 < args.archived_fraction < 1:
+        raise SystemExit("--archived-fraction must be between 0 and 1.")
+
+    repos = discover(args.target, args.archived_fraction)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n".join(repos) + "\n", encoding="utf-8")
