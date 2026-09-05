@@ -31,7 +31,7 @@ def scaled_model_is_eligible(
 
 def default_model_path() -> Path:
     """Use the scaled artifact only after all three risk classes have meaningful support."""
-    if scaled_model_is_eligible():
+    if scaled_model_is_eligible(SCALED_MODEL_PATH, SCALED_METRICS_PATH):
         return SCALED_MODEL_PATH
     return LEGACY_MODEL_PATH
 
