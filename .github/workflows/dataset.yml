@@ -89,21 +89,31 @@ jobs:
             --input data/repo_risk_unlabelled_100k.csv \
             --output data/repo_risk_training_100k.csv
 
-      - name: Train experimental risk baseline when enough rows exist
+      - name: Train experimental risk baseline when dataset changed
         run: |
-          ROWS=$(python - <<'PY'
-          import csv
+          read ROWS PREVIOUS <<EOF
+          $(python - <<'PY'
+          import csv, json
           from pathlib import Path
-          p = Path('data/repo_risk_training_100k.csv')
-          print(sum(1 for _ in csv.DictReader(p.open(encoding='utf-8'))) if p.exists() else 0)
+          training = Path('data/repo_risk_training_100k.csv')
+          rows = sum(1 for _ in csv.DictReader(training.open(encoding='utf-8'))) if training.exists() else 0
+          progress = Path('data/repo_risk_100k_progress.json')
+          previous = 0
+          if progress.exists():
+              try:
+                  previous = int(json.loads(progress.read_text(encoding='utf-8')).get('labelled_snapshots', 0))
+              except (ValueError, TypeError, json.JSONDecodeError):
+                  previous = 0
+          print(rows, previous)
           PY
           )
-          echo "Labelled rows: $ROWS"
-          if [ "$ROWS" -ge 200 ]; then
+          EOF
+          echo "Labelled rows: $ROWS (previous committed: $PREVIOUS)"
+          if [ "$ROWS" -ge 200 ] && { [ "$ROWS" -ne "$PREVIOUS" ] || [ ! -f models/repo_risk_100k.joblib ]; }; then
             mkdir -p models
             python scripts/train_risk_model.py data/repo_risk_training_100k.csv --output models/repo_risk_100k.joblib > models/repo_risk_100k_metrics.json
           else
-            echo "Skipping model refresh until at least 200 labelled rows exist"
+            echo "Skipping model refresh: not enough rows or dataset unchanged"
           fi
 
       - name: Write dataset progress summary
