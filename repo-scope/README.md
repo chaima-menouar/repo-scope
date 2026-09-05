@@ -6,49 +6,50 @@
 
 - FastAPI web application and REST API
 - Responsive developer-tooling dashboard
-- GitHub REST API client with authentication, pagination, caching and rate-limit handling
+- GitHub REST client with authentication, pagination, caching and rate-limit handling
 - Explainable 0–100 repository health score
 - Bus-factor / contributor concentration analysis
 - Issue and pull-request hygiene metrics
-- CI, tests, README, license, contributing and security-policy detection
-- Cloud/DevOps readiness score based on CI, tests, Docker, IaC, lockfiles and deployment config
-- Monthly commit and issue time series
-- Repository comparison
-- Structured AI diagnosis with top risks, evidence, strengths and next actions
-- Optional OpenAI narrative enhancement with deterministic fallback
-- Incremental 100k repository catalog pipeline in GitHub Actions
-- Stratified 10k deep-profile target with timestamped snapshots
-- Conservative weak labels based on independent maintenance evidence
-- Human-review queue for ambiguous or evidence-poor snapshots
-- Dataset-quality reporting for balance, provenance, missingness and diversity
-- Random Forest experimental risk baseline with grouped holdout and stratified grouped cross-validation
-- Reproducible model provenance: dataset SHA-256, source CSV, training timestamp and library version
-- Optional ML inference that prefers the scaled artifact when available and fails closed otherwise
-- Standalone HTML and JSON reports
-- CLI package (`repo-scope owner/repo`)
+- Cloud/DevOps readiness from CI, tests, Docker, IaC, lockfiles and deployment configuration
+- Monthly activity time series and repository comparison
+- Structured AI diagnosis with deterministic fallback and optional LLM enhancement
+- Completed **60,000-repository research catalog**
+- **1,267** deep repository snapshots with timestamped engineering evidence
+- **697** conservative weak-labelled snapshots for experimental ML
+- Durable blind human-review queue and human-label override path
+- Dataset quality, grouped evaluation, temporal validation, calibration diagnostics and failure-slice analysis
+- Random Forest experimental risk baseline with versioned feature schema and reproducible provenance
+- Machine-readable model readiness and explicit manual promotion approval
+- Standalone HTML/JSON reports and CLI
 - Pytest + correctness-focused Ruff CI
-- Docker runtime with ML support, plus Vercel/Render and AWS deployment paths
+- Docker runtime and documented cloud deployment paths
 
 ## Architecture
 
 ```text
 GitHub REST API
       |
-      +--> broad 100k catalog target
+      +--> completed 60k research catalog
       |       language / stars / archive state / timestamps / license
       |
-      `--> stratified 10k deep-profile target
-              timestamped engineering snapshots
+      `--> 1,267 deep repository snapshots
+              timestamped engineering features
                       |
               independent maintenance evidence
                  /                    \
-          weak labels          human-review queue
+          weak labels          blind human-review queue
                  \                    /
-                  dataset-quality report
+                  combined training path
                            |
-                 grouped ML evaluation
+             quality + grouped evaluation
+             + temporal holdout + calibration
+             + failure-slice diagnostics
                            |
-                  Random Forest artifact
+                  experimental model
+                           |
+                    readiness gate
+                           |
+                explicit human promotion
 
 Live analysis:
 RepoProfile --> health + alerts + cloud readiness + structured AI + optional ML
@@ -74,7 +75,7 @@ Open `http://127.0.0.1:8000` and API docs at `http://127.0.0.1:8000/docs`.
 
 ### Environment variables
 
-`GITHUB_TOKEN` is strongly recommended. `OPENAI_API_KEY` is optional; without it RepoScope keeps the AI analyst usable through the local structured diagnosis.
+`GITHUB_TOKEN` is strongly recommended. `OPENAI_API_KEY` is optional; without it RepoScope keeps the analyst usable through deterministic structured diagnosis.
 
 ```env
 GITHUB_TOKEN=github_pat_...
@@ -84,7 +85,7 @@ CACHE_TTL_SECONDS=3600
 GITHUB_MAX_PAGES=3
 ```
 
-Never commit `.env`.
+Never commit `.env` or production credentials.
 
 ## CLI
 
@@ -102,28 +103,19 @@ POST /api/compare
 POST /api/ai-insight
 ```
 
-Example request:
-
-```json
-{
-  "repo": "fastapi/fastapi",
-  "refresh": false
-}
-```
-
-`/api/analyze` includes deterministic health analytics, Cloud/DevOps readiness and the optional `ml_risk` block. `/api/ai-insight` adds the structured engineering diagnosis and optional LLM narrative.
+`/api/analyze` returns deterministic engineering analytics, Cloud/DevOps readiness and the optional `ml_risk` block. `/api/ai-insight` adds structured engineering diagnosis and an optional LLM narrative.
 
 ## Experimental ML pipeline
 
-RepoScope does **not** create ML labels from its own health score. GitHub Actions builds a broad repository catalog, selects a diverse deep-analysis manifest, collects timestamped engineering snapshots and independent maintenance evidence, then applies a conservative weak-label policy:
+RepoScope deliberately does **not** create ML labels from its own health score. Independent GitHub maintenance evidence drives a conservative weak-label bootstrap:
 
-- GitHub explicitly archived → `risky`
-- latest release **≤150 days** and not archived → `healthy`
-- latest release **≥180 days** and not archived → `watch`
-- release age **151–179 days** → ambiguous, excluded from weak-label training and eligible for review
-- insufficient independent evidence → skipped rather than guessed and eligible for the human-review queue
+- explicitly archived repository → `risky`
+- latest release ≤150 days and not archived → `healthy`
+- latest release ≥180 days and not archived → `watch`
+- release age 151–179 days → ambiguous and excluded from weak training
+- insufficient independent evidence → skipped rather than guessed
 
-Each accepted training row records `label_source` and `label_evidence`. The model uses only these eight features:
+Every accepted training row records label provenance. The eight model features are:
 
 - days since last commit
 - bus factor
@@ -134,31 +126,50 @@ Each accepted training row records `label_source` and `label_evidence`. The mode
 - CI presence
 - test presence
 
-The 10k deep manifest is selected with round-robin strata across language and popularity buckets while preserving active/archived representation. Collection is resumable and checkpointed. GitHub Actions uses a conservative deep batch size because the built-in token has a finite REST API budget.
+The final v0.6 research snapshot contains **60,000 catalog repositories**, **1,267 deep snapshots** and **697 weak-labelled snapshots**. Collection was intentionally stopped at the 60k catalog milestone. Historical artifact filenames retain `100k` for pipeline compatibility; those filenames are not claims that 100,000 repositories were collected.
 
-Training uses **StratifiedGroupKFold** plus a separate repository-grouped holdout so repository identity cannot leak between evaluation partitions. Metrics include per-class precision/recall/F1, macro F1, feature importance and warnings for small or suspiciously optimistic weak-label results.
+Evaluation is repository-aware: `StratifiedGroupKFold` produces out-of-fold predictions, a grouped holdout checks generalization, and a chronological holdout checks newer repositories without identity leakage. The pipeline also reports per-class metrics, balanced accuracy, calibration diagnostics and failure slices by non-feature context.
 
-The generated model stores its source CSV, dataset SHA-256, training timestamp, model type and scikit-learn version. Its class probabilities are explicitly marked **experimental weak supervision**, not calibrated production risk.
+The latest trained experimental model is evaluated on all 697 weak-labelled repositories after isolated evaluation and final refit. Grouped cross-validation reports roughly **81.0% macro F1** and **81.3% balanced accuracy**, with expected calibration error around **0.068**. These are weak-supervision research metrics, not independently validated production accuracy.
 
-Generated large-scale artifacts are the source of truth for actual progress; the 100k and 10k values are targets until `data/repo_risk_100k_progress.json` verifies completion.
+## Model governance
 
-```bash
-python scripts/collect_repository_catalog.py --target 100000 --max-new 5000
-python scripts/build_deep_manifest.py --catalog data/repository_catalog_100k.csv --target 10000
-python scripts/collect_training_data.py --repos data/seed_repositories_100k.txt --output data/repo_risk_unlabelled_100k.csv --resume --limit 100
-python scripts/bootstrap_weak_labels.py --input data/repo_risk_unlabelled_100k.csv --output data/repo_risk_training_100k.csv
-python scripts/export_label_review_queue.py --input data/repo_risk_unlabelled_100k.csv --output data/repo_risk_human_review_queue.csv
-python scripts/report_dataset_quality.py --catalog data/repository_catalog_100k.csv --training data/repo_risk_training_100k.csv
-python scripts/train_risk_model.py data/repo_risk_training_100k.csv --output models/repo_risk_100k.joblib
-```
+The deterministic health score remains RepoScope's primary explainable signal. ML is deliberately secondary until independent human validation is sufficient.
 
-See `docs/ML_TRAINING.md` for the methodology, promotion checklist and limitations.
+The scaled model cannot silently become the default. Promotion requires:
+
+1. minimum class support and dataset-quality gates;
+2. grouped and temporal validation thresholds;
+3. acceptable calibration and failure-slice diagnostics;
+4. a sufficiently large blind human-reviewed validation subset;
+5. weak-vs-human agreement checks;
+6. an explicit manual promotion decision.
+
+The current automated evidence gates pass, while production promotion remains blocked by the missing independent human-reviewed validation subset. RepoScope does not fabricate human labels to clear that blocker.
+
+See `docs/ML_TRAINING.md`, `docs/HUMAN_LABEL_RUBRIC.md`, `models/repo_risk_100k_model_card.md` and `models/repo_risk_100k_readiness.json` for the detailed methodology and current status.
+
+## Generated ML artifacts
+
+The v0.6 pipeline keeps its historical `100k` artifact names for compatibility:
+
+- `data/repository_catalog_100k.csv` — final 60k broad catalog
+- `data/repo_risk_unlabelled_100k.csv` — deep snapshots and evaluation context
+- `data/repo_risk_training_100k.csv` — weak-labelled rows
+- `data/repo_risk_training_combined_100k.csv` — weak labels plus durable human overrides
+- `data/repo_risk_human_review_queue.csv` — blinded review candidates
+- `data/repo_risk_human_labels.csv` — durable human-review registry
+- `data/repo_risk_100k_quality.json` — dataset quality report
+- `data/repo_risk_100k_progress.json` — verified collection counters
+- `models/repo_risk_100k_metrics.json` — grouped, temporal, calibration and failure-slice metrics
+- `models/repo_risk_100k_model_card.md` — generated Model Card
+- `models/repo_risk_100k_readiness.json` — promotion readiness/blockers
+- `models/repo_risk_100k_promotion.json` — explicit manual approval record
+- `models/repo_risk_100k.joblib` — experimental scaled artifact
 
 ## Deploy
 
-### Vercel / lightweight runtime
-
-The deterministic analytics and AI fallback work without the optional ML dependencies. Configure `GITHUB_TOKEN` in environment variables, and add `OPENAI_API_KEY` only when the external LLM narrative is desired.
+Deployment is intentionally a later project phase. The repository already includes Docker and deployment documentation, but v0.6 does not claim a new production deployment.
 
 ### Docker / ML-enabled runtime
 
@@ -167,20 +178,18 @@ docker build -t repo-scope .
 docker run --rm -p 8000:8000 -e GITHUB_TOKEN=... repo-scope
 ```
 
-The Docker image installs the ML optional dependencies and includes generated model artifacts. Inference prefers `repo_risk_100k.joblib` once the scaled pipeline has produced it and otherwise falls back to the verified legacy baseline. The same image can be pushed to AWS ECR and deployed through App Runner or ECS. See `docs/AWS_DEPLOY.md`.
-
 ## Interpretation note
 
-RepoScope intentionally caps paginated GitHub collection to keep interactive analysis fast and respectful of API limits. Activity, contributor, issue and PR metrics are recent sampled signals rather than claims about an exhaustive repository history. Cloud readiness describes repository delivery signals, not proof of a secure live deployment. The ML model remains experimental until a larger independently reviewed human-labelled dataset and temporal validation satisfy the documented promotion checklist.
+Interactive GitHub analysis intentionally uses bounded API samples to remain fast and respectful of rate limits. Activity, contributor, issue and PR metrics are engineering signals rather than claims about exhaustive repository history. Cloud readiness describes repository delivery posture, not proof of a secure production deployment. The ML model remains experimental weak supervision until independent human validation satisfies the documented promotion policy.
 
 ## Project structure
 
 ```text
 repo-scope/
 ├── app.py
-├── public/                    # responsive engineering dashboard
+├── public/                    # engineering dashboard
 ├── data/                      # catalog, deep snapshots, labels, QA, review queue
-├── models/                    # experimental model + evaluation/provenance metadata
+├── models/                    # experimental model + evaluation/governance metadata
 ├── src/repo_scope/
 │   ├── web.py                 # FastAPI application
 │   ├── profile.py             # orchestration API
@@ -189,7 +198,7 @@ repo-scope/
 │   ├── report/                # HTML + JSON reports
 │   ├── ml/                    # labels / training / optional inference
 │   └── insights.py            # structured diagnosis + optional LLM
-├── scripts/                   # catalog / sampling / collection / labeling / QA / training
+├── scripts/                   # collection / labeling / QA / training / governance
 ├── tests/
 └── docs/
 ```
