@@ -14,8 +14,8 @@ RepoScope is intentionally built as an end-to-end **AI + Cloud + Software Engine
 - **Data source:** GitHub REST API with pagination, authentication, caching and rate-limit handling
 - **Analytics:** health scoring, bus factor, issue/PR hygiene, alerts and time series
 - **AI:** structured risk diagnosis with evidence + optional LLM enhancement
-- **ML:** scalable repository catalog collection, stratified deep repository snapshots, independent maintenance evidence, weak-label bootstrap, human-review queue, repository-grouped evaluation and Random Forest baseline
-- **Data quality:** class balance, label provenance, feature missingness, catalog diversity and explicit quality warnings
+- **ML:** scalable repository catalog collection, stratified deep snapshots, independent maintenance evidence, weak-label bootstrap, durable human review, repository-grouped evaluation and Random Forest baseline
+- **Data quality:** class balance, label provenance, feature missingness, catalog diversity, failure slices and explicit quality warnings
 - **Cloud readiness:** CI/CD, tests, Docker, infrastructure-as-code, lockfile and deployment-config detection with a 0–100 posture score
 - **Frontend:** responsive engineering intelligence dashboard with Chart.js
 - **Cloud / DevOps:** Docker, GitHub Actions, Vercel/Render support and AWS ECR + App Runner/ECS path
@@ -27,28 +27,36 @@ RepoScope is intentionally built as an end-to-end **AI + Cloud + Software Engine
 GitHub REST API
       |
       +--> 100k repository catalog target
-      |       metadata: language, activity timestamps, archive state,
-      |       stars, forks, size, license and repository identity
+      |       language + age + popularity + archive state + metadata
       |
       `--> 10k stratified deep-profile target
-              language × popularity × archive-state diversity
+              language × popularity × maintenance-state diversity
                       |
-              timestamped snapshots
-              commits + contributors + issues + PRs + engineering signals
+              timestamped snapshots + engineering features
                       |
-                      v
               independent maintenance evidence
                       |
-              +-------+------------------+
-              |                          |
-              v                          v
-      conservative weak labels    ambiguous review queue
-              |                    for human labels
-              v
-      dataset quality report
-              |
-              v
-      grouped ML evaluation + model artifact
+              +-------+----------------------+
+              |                              |
+              v                              v
+      conservative weak labels        ambiguous review queue
+              |                              |
+              |                       durable human labels
+              |                              |
+              +-------------+----------------+
+                            v
+                    combined training set
+                            |
+             quality + grouped CV + holdout
+             + temporal holdout + calibration
+             + failure-slice diagnostics
+                            |
+                            v
+                 experimental model artifact
+                            |
+                  readiness policy report
+                            |
+               explicit human promotion only
 
 Live analysis path:
 GitHub --> feature extraction --> health + alerts + cloud posture + AI diagnosis
@@ -57,7 +65,6 @@ Serving path:
 FastAPI --> Dashboard / REST API / CLI / HTML / JSON
 
 CI/CD: GitHub Actions --> lint + tests + Docker build
-ML automation: catalog --> stratified deep snapshots --> evidence labels/review queue --> quality gate --> train --> metrics/model
 Cloud delivery: Docker --> Registry --> Render / AWS App Runner or ECS
 ```
 
@@ -65,16 +72,21 @@ Cloud delivery: Docker --> Registry --> Render / AWS App Runner or ECS
 
 RepoScope deliberately separates **catalog scale** from **deep-analysis scale**.
 
-- **100,000 repository catalog target:** broad GitHub coverage used to build a diverse candidate pool across languages, ages, activity levels, popularity bands and archive states.
-- **10,000 deep repository target:** a stratified subset receives the more expensive RepoScope analysis required for model features. Sampling round-robins across language and star buckets while preserving active/archived representation instead of simply taking repositories alphabetically.
-- **Timestamped snapshots:** new deep rows record `snapshot_at_utc`, giving the dataset provenance needed for later temporal evaluation and drift analysis.
-- **Incremental collection:** GitHub Actions adds bounded batches and resumes from committed progress instead of attempting an unsafe one-shot crawl. Deep snapshots are checkpointed during a batch as well.
-- **Independent labels:** weak labels are derived from external maintenance evidence such as archive state and release recency, never from RepoScope's own health score.
-- **Human-review path:** ambiguous or evidence-poor rows are exported separately with empty `human_label` and `review_notes` fields rather than being guessed.
-- **Quality reporting:** every refresh can generate class balance, label-source distribution, missingness, language/license mix and warnings about weak coverage.
-- **Leakage controls:** repositories are grouped during evaluation so snapshots from one repository cannot appear on both sides of an evaluation split.
-- **Cross-validation:** the training pipeline uses stratified grouped folds when class support allows it, in addition to a repository-grouped holdout.
-- **Reproducibility:** model artifacts record the source CSV, dataset SHA-256, training timestamp, model type and scikit-learn version.
+- **100,000 repository catalog target:** broad GitHub coverage across languages, ages, activity levels, popularity bands and archive states.
+- **10,000 deep repository target:** a stratified subset receives expensive feature extraction. Sampling mixes language, popularity, active/archived state and a stale-active sampling proxy without using that proxy as the target.
+- **Timestamped snapshots:** deep rows record `snapshot_at_utc` for temporal evaluation and future drift analysis.
+- **Incremental collection:** bounded, resumable GitHub Actions batches checkpoint progress instead of attempting a one-shot crawl.
+- **Branch-safe continuation:** while the work remains on `improve/portfolio-ai-cloud`, a guarded trigger advances one new batch only after the previous run completes; no merge or deployment is required for collection to continue.
+- **Independent labels:** weak labels are derived from archive/release evidence, never from RepoScope's own health score.
+- **Human-review path:** ambiguous cases go to a blinded review queue and durable human-label registry with reviewer provenance.
+- **Weak-vs-human comparison:** agreement and confusion are measured once enough independent human reviews exist.
+- **Quality reporting:** each refresh measures balance, provenance, missingness and catalog diversity.
+- **Leakage controls:** repository identity is the split unit.
+- **Evaluation:** stratified grouped cross-validation, grouped holdout, chronological holdout, balanced metrics and confusion matrices.
+- **Probability reliability:** out-of-fold log loss, multiclass Brier score and 10-bin expected calibration error are measured, but probabilities remain explicitly uncalibrated for production use.
+- **Failure slices:** out-of-fold errors are sliced by non-feature context such as language, repository size and maintenance style.
+- **Reproducibility:** artifacts record source CSV, dataset SHA-256, feature-schema version, fit strategy, training timestamp, model type and scikit-learn version.
+- **Promotion safety:** a scaled artifact must pass automated readiness gates and then receive separate explicit human promotion approval before it can become the default inference model.
 
 The current committed dataset/model status should always be read from generated progress and metrics artifacts; target numbers are not presented as already collected until those artifacts verify completion.
 
@@ -90,34 +102,41 @@ The current committed dataset/model status should always be read from generated 
 | Optional LLM | External model enhancement without making the core product dependent on paid AI |
 | Trends | Commit velocity and issue-flow time series |
 | Comparison | Side-by-side repository benchmarking |
-| Experimental ML | Random Forest baseline with label provenance and repository-level leakage controls |
-| ML evaluation | Stratified grouped cross-validation, grouped holdout and explicit optimism warnings |
+| Experimental ML | Random Forest baseline with independent label provenance and repository-level leakage controls |
+| ML evaluation | Grouped CV, grouped holdout, temporal holdout, balanced metrics, calibration diagnostics and failure slices |
 | Dataset QA | Missingness, class balance, provenance and catalog-diversity reporting |
-| Human review | Ambiguous weak-label cases exported for independent manual review |
-| ML automation | GitHub Actions collection, weak-label bootstrap, review queue, quality reporting, model training and metrics generation |
+| Human review | Blinded rubric, durable labels, weak-label overrides and weak-vs-human agreement reporting |
+| Promotion safety | Readiness report + versioned feature schema + explicit manual promotion record |
+| ML automation | GitHub Actions collection, labeling, review queue, QA, training, Model Card and readiness generation |
 | Cloud delivery | Containerized, environment-configured, CI-tested service |
 
 ## ML honesty and provenance
 
-RepoScope does **not** train the model from its own health score. The experimental baseline collects independent maintenance evidence such as GitHub archive status and latest-release age, records `label_source` / `label_evidence`, and skips repositories where there is not enough independent evidence to assign a conservative weak label.
+RepoScope does **not** train the model from its own health score. The experimental baseline collects independent maintenance evidence, records `label_source` / `label_evidence`, and skips repositories where there is not enough evidence for a conservative weak label.
 
-The resulting ML output is explicitly marked **experimental weak supervision**. It is separate from the deterministic health score and is not presented as a calibrated production probability. A high validation score on weak labels is treated as a signal to investigate possible task simplicity or label-source artifacts, not as proof of real-world production accuracy.
+The ML output is explicitly marked **experimental weak supervision**. A high weak-label score is treated as a reason to inspect task simplicity or label artifacts, not as proof of real-world accuracy. Probability values are diagnostic until independent human validation supports calibration, and the scaled model cannot silently replace the fallback artifact.
 
-See [`repo-scope/docs/ML_TRAINING.md`](./repo-scope/docs/ML_TRAINING.md) for the full methodology.
+See [`repo-scope/docs/ML_TRAINING.md`](./repo-scope/docs/ML_TRAINING.md) and [`repo-scope/docs/HUMAN_LABEL_RUBRIC.md`](./repo-scope/docs/HUMAN_LABEL_RUBRIC.md) for the full methodology.
 
 ## Generated ML artifacts
 
-As the automated pipeline advances, these files describe the actual state rather than the target state:
+As the pipeline advances, these files describe the actual state rather than the target state:
 
 - `repo-scope/data/repository_catalog_100k.csv` — accumulated broad repository catalog
 - `repo-scope/data/seed_repositories_100k.txt` — stratified deep-analysis manifest
-- `repo-scope/data/repo_risk_unlabelled_100k.csv` — timestamped deep analyzed snapshots
-- `repo-scope/data/repo_risk_training_100k.csv` — evidence-labelled training rows
-- `repo-scope/data/repo_risk_human_review_queue.csv` — ambiguous rows prepared for independent human review
+- `repo-scope/data/repo_risk_unlabelled_100k.csv` — timestamped deep snapshots plus non-feature evaluation context
+- `repo-scope/data/repo_risk_training_100k.csv` — evidence-labelled weak training rows
+- `repo-scope/data/repo_risk_training_combined_100k.csv` — weak labels merged with durable human overrides
+- `repo-scope/data/repo_risk_human_review_queue.csv` — ambiguous rows prepared for blinded human review
+- `repo-scope/data/repo_risk_human_labels.csv` — durable human-review registry
+- `repo-scope/data/repo_risk_human_weak_comparison.json` — weak-vs-human agreement report
 - `repo-scope/data/repo_risk_100k_quality.json` — dataset quality report
 - `repo-scope/data/repo_risk_100k_progress.json` — collection counters and status
-- `repo-scope/models/repo_risk_100k_metrics.json` — evaluation output when enough labelled data exists
-- `repo-scope/models/repo_risk_100k.joblib` — experimental model artifact with data/model provenance
+- `repo-scope/models/repo_risk_100k_metrics.json` — grouped, temporal, calibration and failure-slice evaluation output
+- `repo-scope/models/repo_risk_100k_model_card.md` — generated truthful Model Card
+- `repo-scope/models/repo_risk_100k_readiness.json` — machine-readable promotion blockers/readiness
+- `repo-scope/models/repo_risk_100k_promotion.json` — explicit manual promotion approval record; default is `approved: false`
+- `repo-scope/models/repo_risk_100k.joblib` — scaled experimental model artifact when training gates are met
 
 ## Project source
 
