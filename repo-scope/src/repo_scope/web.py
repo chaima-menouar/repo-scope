@@ -18,7 +18,7 @@ PUBLIC_DIR = PROJECT_ROOT / "public"
 
 app = FastAPI(
     title="RepoScope API",
-    version="0.5.0",
+    version="0.6.0",
     description="Repository intelligence: GitHub health, risk, activity, comparison and AI-assisted insights.",
 )
 
@@ -46,7 +46,7 @@ def _profile(repo: str, refresh: bool) -> RepoProfile:
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok", "service": "repo-scope", "version": "0.5.0"}
+    return {"status": "ok", "service": "repo-scope", "version": "0.6.0"}
 
 
 @app.post("/api/analyze")
