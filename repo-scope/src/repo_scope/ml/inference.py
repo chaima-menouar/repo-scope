@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from repo_scope.config import PROJECT_ROOT
-from repo_scope.ml.training import EXPECTED_LABELS, feature_row
+from repo_scope.ml.training import EXPECTED_LABELS, FEATURE_COLUMNS, FEATURE_SCHEMA_VERSION, feature_row
 
 LEGACY_MODEL_PATH = PROJECT_ROOT / "models" / "repo_risk.joblib"
 SCALED_MODEL_PATH = PROJECT_ROOT / "models" / "repo_risk_100k.joblib"
@@ -36,6 +36,15 @@ def default_model_path() -> Path:
     return LEGACY_MODEL_PATH
 
 
+def _artifact_schema_is_compatible(artifact: dict) -> bool:
+    """Accept v1 artifacts and the pre-versioned legacy artifact only when its feature list matches v1 exactly."""
+    features = artifact.get("features")
+    if features != FEATURE_COLUMNS:
+        return False
+    schema_version = artifact.get("feature_schema_version")
+    return schema_version in (None, FEATURE_SCHEMA_VERSION)
+
+
 def predict_risk(stats: dict, model_path: str | Path | None = None) -> dict:
     path = Path(model_path) if model_path is not None else default_model_path()
     if not path.exists():
@@ -57,6 +66,14 @@ def predict_risk(stats: dict, model_path: str | Path | None = None) -> dict:
 
     try:
         artifact = joblib.load(path)
+        if not isinstance(artifact, dict) or not _artifact_schema_is_compatible(artifact):
+            return {
+                "available": False,
+                "status": "model_schema_incompatible",
+                "note": (
+                    "The model artifact uses an unsupported RepoScope feature schema and was not loaded."
+                ),
+            }
         model = artifact["model"]
         features = artifact["features"]
         row = feature_row(stats)
@@ -76,6 +93,7 @@ def predict_risk(stats: dict, model_path: str | Path | None = None) -> dict:
             "probabilities": by_class,
             "training_metadata": metadata,
             "model_artifact": path.name,
+            "feature_schema_version": artifact.get("feature_schema_version", FEATURE_SCHEMA_VERSION),
             "note": (
                 "Experimental baseline trained from conservative weak labels based on independent GitHub "
                 "maintenance evidence. It is not a calibrated production risk score."
