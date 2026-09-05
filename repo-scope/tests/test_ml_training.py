@@ -65,6 +65,6 @@ def test_training_rejects_blank_labels(tmp_path):
     try:
         train_from_csv(str(csv_path), str(tmp_path / "model.joblib"))
     except ValueError as exc:
-        assert "non-empty human-assigned label" in str(exc)
+        assert "non-empty evidence-backed or human-reviewed label" in str(exc)
     else:
         raise AssertionError("Expected blank labels to be rejected")
