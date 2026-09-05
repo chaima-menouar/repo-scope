@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: reposcope-dataset-100k
+  group: reposcope-dataset-100k-v2
   cancel-in-progress: false
 
 permissions:
@@ -64,9 +64,6 @@ jobs:
           catalog = Path('data/repository_catalog_100k.csv')
           output = Path('data/seed_repositories_100k.txt')
           rows = list(csv.DictReader(catalog.open(encoding='utf-8', newline=''))) if catalog.exists() else []
-          # The full 100k catalog is retained. Deep profiling is intentionally capped
-          # at 10k because each RepoScope snapshot needs several GitHub API calls.
-          # Sort deterministically and retain archived + active representation.
           active = sorted((r for r in rows if r.get('archived') != '1'), key=lambda r: r.get('repo', ''))
           archived = sorted((r for r in rows if r.get('archived') == '1'), key=lambda r: r.get('repo', ''))
           deep = active[:8000] + archived[:2000]
