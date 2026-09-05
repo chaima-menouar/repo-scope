@@ -4,6 +4,7 @@ on:
   push:
     branches: [improve/portfolio-ai-cloud]
     paths:
+      - ".github/dataset-trigger.txt"
       - "repo-scope/data/seed_repositories.txt"
       - "repo-scope/data/repo_risk_human_labels.csv"
       - "repo-scope/scripts/discover_seed_repositories.py"
