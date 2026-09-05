@@ -105,7 +105,23 @@ A near-perfect score on a small weakly-labelled dataset is treated as a reason t
 
 The dashboard identifies this model as **experimental weak supervision**. Its class probabilities are not described as calibrated production probabilities.
 
-Production promotion would require a substantially larger independently reviewed human-labelled subset, failure-case analysis, calibration work, temporal validation and evidence that performance remains stable outside the repositories used during development.
+## Promotion checklist
+
+The model should only move beyond `experimental_weak_supervision` after all of the following are satisfied:
+
+- a large deep-profile dataset with meaningful representation of every class;
+- a stratified human-reviewed label subset independent of the weak-label rules;
+- grouped cross-validation that remains stable across folds;
+- a repository-grouped holdout with no identity leakage;
+- a temporal holdout using repositories/snapshots newer than the training cutoff;
+- per-class precision, recall and F1 reviewed, not accuracy alone;
+- calibration measured before exposing probability-like scores as confidence;
+- failure cases inspected across language, repository size and maintenance style;
+- weak-label and human-label performance compared separately;
+- feature importance checked for suspicious shortcuts;
+- reproducible model/data provenance recorded in the artifact metadata.
+
+Until then, RepoScope keeps the deterministic health score as the primary explainable signal and the ML output as an experimental secondary signal.
 
 ## Local commands
 
