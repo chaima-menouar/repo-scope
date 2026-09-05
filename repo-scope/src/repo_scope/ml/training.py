@@ -5,6 +5,7 @@ import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
+FEATURE_SCHEMA_VERSION = "reposcope-risk-features-v1"
 FEATURE_COLUMNS = [
     "days_since_last_commit",
     "bus_factor",
@@ -167,11 +168,13 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
     artifact = {
         "model": model,
         "features": FEATURE_COLUMNS,
+        "feature_schema_version": FEATURE_SCHEMA_VERSION,
         "classes": [str(value) for value in model.classes_],
         "training_metadata": {
             "trained_at_utc": trained_at_utc,
             "source_csv": str(source),
             "dataset_sha256": dataset_sha256,
+            "feature_schema_version": FEATURE_SCHEMA_VERSION,
             "scikit_learn_version": sklearn.__version__,
             "model_type": type(model).__name__,
             "rows": len(frame),
@@ -195,6 +198,7 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         "trained_at_utc": trained_at_utc,
         "source_csv": str(source),
         "dataset_sha256": dataset_sha256,
+        "feature_schema_version": FEATURE_SCHEMA_VERSION,
         "scikit_learn_version": sklearn.__version__,
         "model_type": type(model).__name__,
         "rows": len(frame),
