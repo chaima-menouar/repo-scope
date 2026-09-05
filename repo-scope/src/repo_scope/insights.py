@@ -14,9 +14,7 @@ def build_smart_summary(data: dict) -> str:
     issues = stats.get("issues", {})
     signals = stats.get("signals", {})
 
-    parts = [
-        f"Repository health is {health.get('label', 'unrated').lower()} at {health.get('score', 0)}/100."
-    ]
+    parts = [f"Repository health is {health.get('label', 'unrated').lower()} at {health.get('score', 0)}/100."]
     days = activity.get("days_since_last_commit")
     if days is not None:
         parts.append(f"The latest sampled commit is {days} day{'s' if days != 1 else ''} old.")
@@ -27,6 +25,9 @@ def build_smart_summary(data: dict) -> str:
     closure = issues.get("closure_rate_pct")
     if closure is not None:
         parts.append(f"Sampled issue closure rate is {closure:.0f}%.")
+    cloud = stats.get("cloud_readiness", {})
+    if cloud:
+        parts.append(f"Cloud/DevOps readiness is {cloud.get('score', 0)}/100 ({cloud.get('posture', 'unrated')}).")
     missing = [
         name
         for name, present in (("CI", signals.get("has_ci")), ("tests", signals.get("has_tests")))
@@ -45,6 +46,7 @@ def build_structured_diagnosis(data: dict) -> dict:
     issues = stats.get("issues", {})
     pulls = stats.get("pull_requests", {})
     signals = stats.get("signals", {})
+    cloud = stats.get("cloud_readiness", {})
 
     risks: list[dict] = []
     strengths: list[str] = []
@@ -106,6 +108,23 @@ def build_structured_diagnosis(data: dict) -> dict:
         else:
             strengths.append(f"{label.replace(' is missing', '').replace(' were not detected', '')} detected.")
 
+    cloud_score = cloud.get("score")
+    if cloud_score is not None and cloud_score < 55:
+        missing_cloud = cloud.get("missing", [])[:3]
+        evidence = f"Cloud/DevOps readiness is {cloud_score}/100 ({cloud.get('posture', 'early')})."
+        if missing_cloud:
+            evidence += " Missing signals include " + ", ".join(missing_cloud) + "."
+        action = "Add the highest-value missing delivery controls before production deployment."
+        risks.append({
+            "title": "Cloud delivery readiness is incomplete",
+            "severity": "medium",
+            "evidence": evidence,
+            "recommendation": action,
+        })
+        actions.append(action)
+    elif cloud_score is not None and cloud_score >= 80:
+        strengths.append(f"Cloud/DevOps repository readiness is strong at {cloud_score}/100.")
+
     severity_rank = {"high": 0, "medium": 1, "low": 2}
     risks.sort(key=lambda item: severity_rank.get(item["severity"], 3))
     risks = risks[:3]
@@ -124,7 +143,7 @@ def build_structured_diagnosis(data: dict) -> dict:
         "top_risks": risks,
         "strengths": strengths[:4],
         "next_actions": list(dict.fromkeys(actions))[:4],
-        "evidence_coverage": "sampled GitHub repository metadata and engineering-practice signals",
+        "evidence_coverage": "sampled GitHub metadata, engineering-practice signals, and Cloud/DevOps readiness",
     }
 
 
@@ -157,6 +176,8 @@ def generate_ai_insight(data: dict) -> dict:
             "issues": stats.get("issues"),
             "pull_requests": stats.get("pull_requests"),
             "signals": stats.get("signals"),
+            "cloud_readiness": stats.get("cloud_readiness"),
+            "experimental_ml": stats.get("ml_risk"),
             "alerts": data.get("alerts", []),
         }
         client = OpenAI(api_key=OPENAI_API_KEY)
@@ -165,7 +186,8 @@ def generate_ai_insight(data: dict) -> dict:
             input=(
                 "You are RepoScope's engineering analyst. Analyze the aggregate GitHub repository metrics below. "
                 "Write 3 concise paragraphs: health diagnosis, main risk, and next engineering action. "
-                "Do not invent metrics or claim access to source code. Mention that metrics are sampled where relevant.\n\n"
+                "Treat experimental ML output as supporting evidence only. Do not invent metrics or claim access to "
+                "source code. Mention that metrics are sampled where relevant.\n\n"
                 + json.dumps(compact, ensure_ascii=False)
             ),
         )
