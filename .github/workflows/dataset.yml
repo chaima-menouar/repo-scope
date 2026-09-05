@@ -5,12 +5,14 @@ on:
     branches: [improve/portfolio-ai-cloud]
     paths:
       - "repo-scope/data/seed_repositories.txt"
+      - "repo-scope/data/repo_risk_human_labels.csv"
       - "repo-scope/scripts/discover_seed_repositories.py"
       - "repo-scope/scripts/collect_repository_catalog.py"
       - "repo-scope/scripts/build_deep_manifest.py"
       - "repo-scope/scripts/collect_training_data.py"
       - "repo-scope/scripts/bootstrap_weak_labels.py"
       - "repo-scope/scripts/export_label_review_queue.py"
+      - "repo-scope/scripts/merge_human_labels.py"
       - "repo-scope/scripts/train_risk_model.py"
       - "repo-scope/scripts/report_dataset_quality.py"
       - "repo-scope/scripts/generate_model_card.py"
@@ -100,11 +102,19 @@ jobs:
             --output data/repo_risk_human_review_queue.csv \
             --limit 250
 
+      - name: Merge durable human labels
+        run: |
+          python scripts/merge_human_labels.py \
+            --unlabelled data/repo_risk_unlabelled_100k.csv \
+            --weak data/repo_risk_training_100k.csv \
+            --human data/repo_risk_human_labels.csv \
+            --output data/repo_risk_training_combined_100k.csv
+
       - name: Generate dataset quality report
         run: |
           python scripts/report_dataset_quality.py \
             --catalog data/repository_catalog_100k.csv \
-            --training data/repo_risk_training_100k.csv \
+            --training data/repo_risk_training_combined_100k.csv \
             --output data/repo_risk_100k_quality.json
 
       - name: Train experimental risk baseline at meaningful milestones
@@ -114,7 +124,7 @@ jobs:
           import csv, json
           from collections import Counter
           from pathlib import Path
-          training = Path('data/repo_risk_training_100k.csv')
+          training = Path('data/repo_risk_training_combined_100k.csv')
           rows_data = list(csv.DictReader(training.open(encoding='utf-8'))) if training.exists() else []
           rows = len(rows_data)
           counts = Counter((row.get('label') or '').strip() for row in rows_data)
@@ -142,7 +152,7 @@ jobs:
           fi
           if [ "$SHOULD_TRAIN" -eq 1 ]; then
             mkdir -p models
-            python scripts/train_risk_model.py data/repo_risk_training_100k.csv --output models/repo_risk_100k.joblib > models/repo_risk_100k_metrics.json
+            python scripts/train_risk_model.py data/repo_risk_training_combined_100k.csv --output models/repo_risk_100k.joblib > models/repo_risk_100k_metrics.json
           elif [ "$CLASS_READY" -eq 0 ]; then
             echo "Skipping scaled training until healthy/watch/risky each have at least 20 repositories"
           else
@@ -167,9 +177,11 @@ jobs:
               'catalog_repositories': count_csv('data/repository_catalog_100k.csv'),
               'deep_profile_target': 10000,
               'deep_snapshots': count_csv('data/repo_risk_unlabelled_100k.csv'),
-              'labelled_snapshots': count_csv('data/repo_risk_training_100k.csv'),
+              'labelled_snapshots': count_csv('data/repo_risk_training_combined_100k.csv'),
+              'weak_labelled_snapshots': count_csv('data/repo_risk_training_100k.csv'),
+              'human_reviewed_snapshots': count_csv('data/repo_risk_human_labels.csv'),
               'human_review_queue': count_csv('data/repo_risk_human_review_queue.csv'),
-              'label_type': 'conservative_weak_labels_with_maintenance_evidence',
+              'label_type': 'weak_labels_plus_optional_durable_human_review',
               'quality_report': 'data/repo_risk_100k_quality.json',
               'model_status': 'experimental_weak_supervision',
               'retrain_policy': 'all_classes_min_20_first_model_at_200_then_each_500_label_milestone',
@@ -200,7 +212,9 @@ jobs:
             data/seed_repositories_100k.txt \
             data/repo_risk_unlabelled_100k.csv \
             data/repo_risk_training_100k.csv \
+            data/repo_risk_training_combined_100k.csv \
             data/repo_risk_human_review_queue.csv \
+            data/repo_risk_human_labels.csv \
             data/repo_risk_100k_quality.json \
             data/repo_risk_100k_progress.json
           if [ -f models/repo_risk_100k.joblib ]; then git add -f models/repo_risk_100k.joblib models/repo_risk_100k_metrics.json; fi
