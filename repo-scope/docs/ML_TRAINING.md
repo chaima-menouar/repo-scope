@@ -8,30 +8,32 @@ RepoScope separates three forms of intelligence on purpose:
 
 The ML model is not presented as production ground truth. Its current labels are conservative **weak labels** built from maintenance evidence that is independent from the eight model features, with a separate durable path for independent human review.
 
-## Scale strategy
+## Completed collection scope
 
-RepoScope separates broad discovery from expensive deep profiling:
+The data-collection phase is frozen at the requested milestone:
 
-- **100,000 repository catalog target** for broad coverage across language, age, popularity and maintenance states;
-- **10,000 deep-profile target** for the more expensive feature extraction used by ML;
-- bounded GitHub Actions batches so progress can be committed and resumed safely;
-- generated progress and quality files are the source of truth for what has actually been collected.
+- **60,000 repository catalog** — completed;
+- **1,267 deep-profile snapshots** — completed before the collection stop point;
+- **697 weak-labelled snapshots** — available for experimental training;
+- **250-row blinded human-review queue** — generated;
+- **0 fabricated human reviews** — human validation remains genuinely independent;
+- collection status: `stopped_at_requested_60k_catalog_milestone`.
 
-A target is never presented as completed data until the generated artifacts verify it.
+Internal artifact filenames still contain `100k` because they are stable pipeline names created during the earlier scale design. Those filenames are retained for compatibility; they do **not** mean 100,000 repositories were collected.
 
 ### Diversity-first catalog sampling
 
-The catalog collector partitions GitHub search by language, star bucket, creation year and archived vs active state. Partitions are interleaved so a bounded run does not consume one language or maintenance state first. Each stratum contributes at most the first **100 repositories**, favoring breadth across many strata over depth inside one query.
+The catalog collector partitions GitHub search by language, star bucket, creation year and archived vs active state. Partitions are interleaved so bounded runs do not consume one language or maintenance state first. Each stratum contributes at most the first 100 repositories, favoring breadth across many strata over depth inside one query.
 
 ### Deep-profile sampling
 
 The deep manifest round-robins language and popularity strata and interleaves archived, recent-active and stale-active repositories. `pushed_at` is used only as a sampling proxy to improve the chance of collecting `watch` examples; it is never used as the training target.
 
-### API-efficient collection and branch-safe continuation
+### Collection safety
 
-The ML collector reuses catalog metadata and omits API calls for fields that are not part of the feature vector. The workflow currently collects up to **130 deep repositories per batch**, uses six workers and checkpoints every 25 successful repositories.
+Collection was implemented as bounded, resumable GitHub Actions batches with checkpointing, rate-limit handling, monotonic progress checks and explicit failure when a batch attempts work but produces no new successful rows. Manifest changes preserve historical deep snapshots instead of deleting them.
 
-GitHub scheduled workflows are tied to the default branch, while this work remains intentionally isolated on `improve/portfolio-ai-cloud`. To keep collection progressing without merging or deploying, `.github/dataset-trigger.txt` is a branch-safe trigger. The RepoScope watcher updates it only after the previous dataset run has completed and either the 100k catalog or 10k deep-profile target is still incomplete. This creates exactly one new bounded batch at a time and avoids overlapping runs.
+The collection phase is now stopped. No catalog or deep batch should be triggered after the 60,000-repository milestone unless the project scope is deliberately reopened.
 
 ## Dataset unit and feature contract
 
@@ -58,24 +60,6 @@ Independent labeling evidence collected alongside the features:
 
 The deterministic RepoScope health score is **never used to create the ML label**.
 
-## Automated pipeline
-
-The root workflow `.github/workflows/dataset.yml` performs the experimental pipeline:
-
-1. incrementally advance `data/repository_catalog_100k.csv`;
-2. derive a diverse 10k deep-analysis manifest;
-3. collect resumable deep snapshots into `data/repo_risk_unlabelled_100k.csv`;
-4. apply conservative weak labels;
-5. export ambiguous cases to `data/repo_risk_human_review_queue.csv`;
-6. merge durable human labels from `data/repo_risk_human_labels.csv`;
-7. generate `data/repo_risk_human_weak_comparison.json`;
-8. generate dataset-quality diagnostics;
-9. train only at meaningful milestones and only when all three classes have minimum support;
-10. evaluate grouped cross-validation, grouped holdout, temporal holdout and out-of-fold calibration diagnostics;
-11. write model metadata and a generated Model Card;
-12. generate `models/repo_risk_100k_readiness.json` with explicit promotion blockers;
-13. commit durable progress so the next bounded run resumes safely.
-
 ## Weak-label policy
 
 Current policy:
@@ -86,7 +70,7 @@ Current policy:
 - release age **151–179 days** → ambiguous and excluded from weak training;
 - no independent release/archive evidence → excluded rather than guessed.
 
-The 29-day review gap reduces boundary noise. Every accepted weak label records `label_source` and `label_evidence`.
+The review gap reduces boundary noise. Every accepted weak label records `label_source` and `label_evidence`.
 
 ## Human-review path
 
@@ -94,13 +78,13 @@ The independent reviewer protocol is defined in `docs/HUMAN_LABEL_RUBRIC.md`. Re
 
 The queue and durable registry are intentionally separate:
 
-- `data/repo_risk_human_review_queue.csv` is regenerated by automation;
-- `data/repo_risk_human_labels.csv` is durable and is never regenerated from the queue;
+- `data/repo_risk_human_review_queue.csv` is generated from ambiguous cases;
+- `data/repo_risk_human_labels.csv` is durable and must contain real reviewer decisions only;
 - allowed labels are exactly `healthy`, `watch` and `risky`;
 - reviewer, notes and review timestamp can be stored for provenance;
 - human review overrides a weak label for the same repository in the combined training set.
 
-`scripts/compare_human_weak_labels.py` measures overlap, overall agreement, class-specific agreement and a weak-vs-human confusion matrix. It only declares the comparison subset ready once at least 60 weak/human overlaps exist and each human class has at least 10 examples.
+`scripts/compare_human_weak_labels.py` measures overlap, overall agreement, class-specific agreement and a weak-vs-human confusion matrix. It declares the comparison subset ready only once at least 60 weak/human overlaps exist and each human class has at least 10 examples.
 
 ## Dataset quality checks
 
@@ -114,43 +98,53 @@ The training pipeline uses:
 
 - **StratifiedGroupKFold** out-of-fold evaluation;
 - an independent **GroupShuffleSplit** holdout;
-- a chronological holdout using the newest 25% of repositories by `snapshot_at_utc` when the older partition contains all three classes;
+- a chronological holdout using the newest repositories by `snapshot_at_utc` when the older partition contains all three classes;
 - per-class precision, recall and F1;
 - macro F1, accuracy and balanced accuracy;
 - confusion matrices;
 - feature importance and reproducibility metadata;
-- final refit on all labelled rows only **after** isolated evaluation is complete.
+- final refit on all labelled rows only after isolated evaluation is complete.
 
-### Probability reliability
+## Probability reliability
 
-Out-of-fold `predict_proba` values are used to measure:
+Out-of-fold `predict_proba` values are used to measure multiclass log loss, multiclass Brier score, expected calibration error (ECE), mean confidence and calibration-bin summaries.
 
-- multiclass log loss;
-- multiclass Brier score;
-- 10-bin expected calibration error (ECE);
-- mean confidence and calibration-bin accuracy/confidence summaries.
+These values remain diagnostics. RepoScope does not present them as calibrated production confidence. Production-facing calibration stays blocked until independent human validation is sufficiently large.
 
-These values are diagnostics. The artifact metadata deliberately says `uncalibrated_analysis_only`; RepoScope does not call them calibrated confidence scores. Actual production-facing calibration remains blocked until the independent human-reviewed validation set is sufficiently large.
+## Failure-slice diagnostics
+
+Out-of-fold predictions are checked across non-feature context including:
+
+- language;
+- repository size bucket;
+- maintenance style.
+
+Large slices with poor accuracy block promotion readiness. These checks are meant to surface where aggregate metrics hide systematic errors.
 
 ## Promotion readiness gate
 
-`scripts/evaluate_model_readiness.py` writes a machine-readable readiness report. Automated promotion remains blocked unless all of these are true:
+`scripts/evaluate_model_readiness.py` writes a machine-readable readiness report. The policy requires:
 
 - at least 1,000 deep snapshots;
 - at least 50 labelled repositories in each risk class;
 - grouped CV macro F1 ≥ 0.65;
 - grouped CV balanced accuracy ≥ 0.65;
-- temporal holdout exists, includes all three classes and macro F1 ≥ 0.60;
+- temporal holdout with sufficient support for every class;
+- temporal macro F1 ≥ 0.60;
 - out-of-fold ECE ≤ 0.15;
-- human/weak overlap is large enough for comparison;
+- required failure-slice diagnostics with no large slice below the accuracy floor;
+- a sufficiently large human/weak overlap;
+- at least 10 human-reviewed examples in every class;
 - weak/human agreement ≥ 0.70;
-- dataset-quality report has no unresolved warnings.
+- no unresolved dataset-quality warnings.
 
-Even when every automated gate passes, the report says `eligible_for_manual_review`, not “production ready.” Promotion still requires a deliberate human decision.
+The current generated readiness artifact is the source of truth. At the completed 60k scope, the remaining blocker is the independent human-reviewed validation subset.
+
+Even after automated evidence passes, promotion is **not automatic**. The separate promotion record must receive an explicit manual approval.
 
 ## Model status
 
-The dashboard identifies the model as **experimental weak supervision**. Scaled inference is additionally protected by class-support and feature-schema gates. If the scaled artifact is not eligible, RepoScope falls back to the verified legacy experimental baseline.
+The dashboard identifies the model as **experimental weak supervision**. The deterministic health score remains the primary explainable signal. Scaled inference is protected by class-support, feature-schema, readiness and explicit-promotion gates.
 
 ## Promotion checklist
 
@@ -165,15 +159,24 @@ Before moving beyond experimental status, the project requires:
 - reproducible data/model provenance;
 - a manual promotion decision.
 
-Until then, the deterministic health score remains the primary explainable signal and ML remains a secondary experimental signal.
+## Reproducibility artifacts
 
-## Local commands
+The current state is described by generated files rather than documentation guesses:
+
+- `data/repo_risk_100k_progress.json`
+- `data/repo_risk_100k_quality.json`
+- `data/repo_risk_human_weak_comparison.json`
+- `models/repo_risk_100k_metrics.json`
+- `models/repo_risk_100k_model_card.md`
+- `models/repo_risk_100k_readiness.json`
+- `models/repo_risk_100k_promotion.json`
+
+## Local evaluation commands
+
+Collection commands are intentionally omitted from the normal continuation path because collection is frozen at 60,000 repositories. Existing artifacts can still be rebuilt or evaluated locally:
 
 ```bash
 pip install -e ".[ml]"
-python scripts/collect_repository_catalog.py --target 100000 --output data/repository_catalog_100k.csv --state data/repository_catalog_100k.state.json --max-new 5000
-python scripts/build_deep_manifest.py --catalog data/repository_catalog_100k.csv --output data/seed_repositories_100k.txt --target 10000 --archived-fraction 0.20 --stale-active-fraction 0.35
-python scripts/collect_training_data.py --repos data/seed_repositories_100k.txt --catalog data/repository_catalog_100k.csv --output data/repo_risk_unlabelled_100k.csv --workers 6 --resume --limit 130 --checkpoint-every 25
 python scripts/bootstrap_weak_labels.py --input data/repo_risk_unlabelled_100k.csv --output data/repo_risk_training_100k.csv
 python scripts/export_label_review_queue.py --input data/repo_risk_unlabelled_100k.csv --output data/repo_risk_human_review_queue.csv --limit 250
 python scripts/merge_human_labels.py --unlabelled data/repo_risk_unlabelled_100k.csv --weak data/repo_risk_training_100k.csv --human data/repo_risk_human_labels.csv --output data/repo_risk_training_combined_100k.csv
