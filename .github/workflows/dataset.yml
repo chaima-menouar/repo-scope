@@ -105,12 +105,15 @@ jobs:
 
       - name: Train experimental risk baseline at meaningful milestones
         run: |
-          read ROWS PREVIOUS <<EOF
+          read ROWS PREVIOUS HEALTHY WATCH RISKY <<EOF
           $(python - <<'PY'
           import csv, json
+          from collections import Counter
           from pathlib import Path
           training = Path('data/repo_risk_training_100k.csv')
-          rows = sum(1 for _ in csv.DictReader(training.open(encoding='utf-8'))) if training.exists() else 0
+          rows_data = list(csv.DictReader(training.open(encoding='utf-8'))) if training.exists() else []
+          rows = len(rows_data)
+          counts = Counter((row.get('label') or '').strip() for row in rows_data)
           progress = Path('data/repo_risk_100k_progress.json')
           previous = 0
           if progress.exists():
@@ -118,20 +121,26 @@ jobs:
                   previous = int(json.loads(progress.read_text(encoding='utf-8')).get('labelled_snapshots', 0))
               except (ValueError, TypeError, json.JSONDecodeError):
                   previous = 0
-          print(rows, previous)
+          print(rows, previous, counts.get('healthy', 0), counts.get('watch', 0), counts.get('risky', 0))
           PY
           )
           EOF
-          echo "Labelled rows: $ROWS (previous committed: $PREVIOUS)"
+          echo "Labelled rows: $ROWS; healthy=$HEALTHY watch=$WATCH risky=$RISKY; previous=$PREVIOUS"
           SHOULD_TRAIN=0
-          if [ "$ROWS" -ge 200 ] && [ ! -f models/repo_risk_100k.joblib ]; then
+          CLASS_READY=0
+          if [ "$HEALTHY" -ge 20 ] && [ "$WATCH" -ge 20 ] && [ "$RISKY" -ge 20 ]; then
+            CLASS_READY=1
+          fi
+          if [ "$CLASS_READY" -eq 1 ] && [ "$ROWS" -ge 200 ] && [ ! -f models/repo_risk_100k.joblib ]; then
             SHOULD_TRAIN=1
-          elif [ "$ROWS" -ge 500 ] && [ $((ROWS / 500)) -gt $((PREVIOUS / 500)) ]; then
+          elif [ "$CLASS_READY" -eq 1 ] && [ "$ROWS" -ge 500 ] && [ $((ROWS / 500)) -gt $((PREVIOUS / 500)) ]; then
             SHOULD_TRAIN=1
           fi
           if [ "$SHOULD_TRAIN" -eq 1 ]; then
             mkdir -p models
             python scripts/train_risk_model.py data/repo_risk_training_100k.csv --output models/repo_risk_100k.joblib > models/repo_risk_100k_metrics.json
+          elif [ "$CLASS_READY" -eq 0 ]; then
+            echo "Skipping scaled training until healthy/watch/risky each have at least 20 repositories"
           else
             echo "Skipping model refresh until the next 500-label milestone"
           fi
@@ -159,7 +168,7 @@ jobs:
               'label_type': 'conservative_weak_labels_with_maintenance_evidence',
               'quality_report': 'data/repo_risk_100k_quality.json',
               'model_status': 'experimental_weak_supervision',
-              'retrain_policy': 'first_model_at_200_then_each_500_label_milestone',
+              'retrain_policy': 'all_classes_min_20_first_model_at_200_then_each_500_label_milestone',
           }
           Path('data/repo_risk_100k_progress.json').write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
           print(payload)
@@ -174,7 +183,7 @@ jobs:
               --metrics models/repo_risk_100k_metrics.json \
               --output models/repo_risk_100k_model_card.md
           else
-            echo "No scaled model metrics yet; model card will be generated at the first training milestone"
+            echo "No eligible scaled model metrics yet; model card will be generated at the first training milestone"
           fi
 
       - name: Commit dataset progress
