@@ -1,38 +1,43 @@
 {
   "catalog": {
-    "rows": 5000,
-    "active": 4000,
-    "archived": 1000,
+    "rows": 10000,
+    "active": 8796,
+    "archived": 1204,
     "languages": {
-      "Python": 4998,
-      "unknown": 2
+      "Python": 5354,
+      "JavaScript": 3496,
+      "TypeScript": 1147,
+      "unknown": 3
     },
     "licenses": {
-      "MIT": 1856,
-      "unknown": 1408,
-      "Apache-2.0": 747,
-      "NOASSERTION": 490,
-      "AGPL-3.0": 214,
-      "GPL-3.0": 170,
-      "BSD-3-Clause": 27,
-      "CC0-1.0": 20,
-      "Unlicense": 13,
-      "CC-BY-4.0": 8,
-      "GPL-2.0": 7,
-      "BSD-2-Clause": 6,
-      "MPL-2.0": 6,
+      "MIT": 3974,
+      "unknown": 3104,
+      "Apache-2.0": 1150,
+      "NOASSERTION": 829,
+      "AGPL-3.0": 397,
+      "GPL-3.0": 327,
+      "CC0-1.0": 37,
+      "BSD-3-Clause": 34,
+      "GPL-2.0": 30,
+      "Unlicense": 22,
+      "MPL-2.0": 21,
+      "ISC": 12,
+      "CC-BY-4.0": 10,
+      "BSD-2-Clause": 8,
+      "LGPL-3.0": 8,
+      "CC-BY-SA-4.0": 7,
+      "MIT-0": 7,
       "EUPL-1.2": 5,
-      "LGPL-3.0": 5,
-      "MIT-0": 4,
-      "CC-BY-SA-4.0": 3,
+      "LGPL-2.1": 4,
+      "WTFPL": 3,
+      "0BSD": 2,
       "CERN-OHL-S-2.0": 2,
-      "LGPL-2.1": 2,
-      "WTFPL": 2,
+      "UPL-1.0": 2,
       "CERN-OHL-P-2.0": 1,
       "CERN-OHL-W-2.0": 1,
       "EPL-2.0": 1,
       "MulanPSL-2.0": 1,
-      "UPL-1.0": 1
+      "ODbL-1.0": 1
     },
     "missingness": {
       "repo": {
@@ -40,8 +45,8 @@
         "missing_pct": 0.0
       },
       "language": {
-        "missing": 2,
-        "missing_pct": 0.04
+        "missing": 3,
+        "missing_pct": 0.03
       },
       "created_at": {
         "missing": 0,
@@ -60,25 +65,25 @@
         "missing_pct": 0.0
       },
       "license": {
-        "missing": 1408,
-        "missing_pct": 28.16
+        "missing": 3104,
+        "missing_pct": 31.04
       }
     }
   },
   "training": {
-    "rows": 240,
-    "unique_repositories": 240,
+    "rows": 280,
+    "unique_repositories": 280,
     "labels": {
-      "healthy": 238,
-      "watch": 2
+      "healthy": 276,
+      "watch": 4
     },
     "label_balance": {
-      "healthy": 0.9917,
-      "watch": 0.0083
+      "healthy": 0.9857,
+      "watch": 0.0143
     },
     "label_sources": {
-      "recent_release_evidence": 238,
-      "stale_release_evidence": 2
+      "recent_release_evidence": 276,
+      "stale_release_evidence": 4
     },
     "feature_missingness": {
       "days_since_last_commit": {
