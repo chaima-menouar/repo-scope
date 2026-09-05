@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -21,13 +22,19 @@ def load_decisions(path: Path) -> list[dict[str, str]]:
     for row in rows:
         repo = (row.get("repo") or "").strip()
         label = (row.get("human_label") or "").strip()
+        notes = (row.get("review_notes") or "").strip()
         reviewer = (row.get("reviewer") or "").strip()
+        reviewed_at = (row.get("reviewed_at_utc") or "").strip()
         if not repo:
             continue
         if label not in ALLOWED_LABELS:
             raise ValueError(f"Invalid human label for {repo}: {label!r}")
         if not reviewer:
             raise ValueError(f"Missing reviewer for {repo}")
+        if not notes:
+            raise ValueError(f"Missing evidence notes for {repo} by reviewer {reviewer}")
+        if not reviewed_at:
+            raise ValueError(f"Missing review timestamp for {repo} by reviewer {reviewer}")
         pair = (repo, reviewer)
         if pair in seen_pairs:
             raise ValueError(f"Duplicate independent decision for {repo} by reviewer {reviewer}")
@@ -36,7 +43,9 @@ def load_decisions(path: Path) -> list[dict[str, str]]:
     return valid
 
 
-def adjudicate(decisions: list[dict[str, str]], *, min_reviewers: int = 2) -> tuple[list[dict[str, str]], dict[str, object]]:
+def adjudicate(
+    decisions: list[dict[str, str]], *, min_reviewers: int = 2
+) -> tuple[list[dict[str, str]], dict[str, object]]:
     grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
     for row in decisions:
         grouped[row["repo"]].append(row)
@@ -90,7 +99,15 @@ def adjudicate(decisions: list[dict[str, str]], *, min_reviewers: int = 2) -> tu
             }
         )
 
+    if not decisions:
+        status = "no_human_decisions"
+    elif disagreements or insufficient:
+        status = "partial_adjudication"
+    else:
+        status = "fully_adjudicated"
+
     report = {
+        "status": status,
         "decision_rows": len(decisions),
         "repositories_with_decisions": len(grouped),
         "adjudicated_repositories": len(resolved),
@@ -115,16 +132,23 @@ def write_labels(path: Path, rows: list[dict[str, str]]) -> None:
         writer.writerows(rows)
 
 
+def write_report(path: Path, report: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Adjudicate independent RepoScope human-review decisions.")
     parser.add_argument("--decisions", default="data/repo_risk_human_review_decisions.csv")
     parser.add_argument("--output", default="data/repo_risk_human_labels.csv")
+    parser.add_argument("--report", default="data/repo_risk_human_adjudication.json")
     parser.add_argument("--min-reviewers", type=int, default=2)
     args = parser.parse_args()
 
     decisions = load_decisions(Path(args.decisions))
     labels, report = adjudicate(decisions, min_reviewers=max(2, args.min_reviewers))
     write_labels(Path(args.output), labels)
+    write_report(Path(args.report), report)
     print(report)
 
 
