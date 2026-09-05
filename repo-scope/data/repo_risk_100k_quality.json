@@ -94,22 +94,22 @@
     }
   },
   "training": {
-    "rows": 330,
-    "unique_repositories": 330,
+    "rows": 388,
+    "unique_repositories": 388,
     "labels": {
-      "healthy": 280,
-      "risky": 46,
-      "watch": 4
+      "healthy": 298,
+      "risky": 55,
+      "watch": 35
     },
     "label_balance": {
-      "healthy": 0.8485,
-      "risky": 0.1394,
-      "watch": 0.0121
+      "healthy": 0.768,
+      "risky": 0.1418,
+      "watch": 0.0902
     },
     "label_sources": {
-      "recent_release_evidence": 280,
-      "github_archived_flag": 46,
-      "stale_release_evidence": 4
+      "recent_release_evidence": 298,
+      "github_archived_flag": 55,
+      "stale_release_evidence": 35
     },
     "feature_missingness": {
       "days_since_last_commit": {
@@ -146,9 +146,6 @@
       }
     }
   },
-  "warnings": [
-    "at least one label class has fewer than 20 examples",
-    "label distribution is highly imbalanced"
-  ],
-  "status": "needs_review"
+  "warnings": [],
+  "status": "healthy"
 }

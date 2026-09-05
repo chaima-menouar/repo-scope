@@ -1,0 +1,25 @@
+{
+  "rows": 388,
+  "repositories": 388,
+  "folds": 5,
+  "class_counts": {
+    "healthy": 298,
+    "risky": 55,
+    "watch": 35
+  },
+  "models": {
+    "logistic_regression": {
+      "accuracy": 0.78866,
+      "balanced_accuracy": 0.716979,
+      "macro_f1": 0.676584
+    },
+    "random_forest": {
+      "accuracy": 0.865979,
+      "balanced_accuracy": 0.772289,
+      "macro_f1": 0.775793
+    }
+  },
+  "best_experimental_baseline": "random_forest",
+  "selection_metric": "macro_f1_then_balanced_accuracy",
+  "note": "This benchmark compares grouped out-of-fold predictions; it does not automatically promote a model."
+}
