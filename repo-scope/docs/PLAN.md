@@ -32,10 +32,12 @@
 - [x] Store dataset hash, model metadata and versioned feature schema
 - [x] Fail closed on incompatible model feature schemas
 - [x] Gate scaled-model inference on minimum support for all three classes
+- [x] Measure out-of-fold probability reliability with log loss, multiclass Brier score and ECE
+- [x] Add automated weak-label vs human-review agreement reporting
+- [x] Add a machine-readable promotion-readiness gate with explicit blocking reasons
 - [ ] Build a sufficiently large stratified human-reviewed validation subset
-- [ ] Measure/calibrate probabilities before treating them as confidence
-- [ ] Compare weak-label and human-label performance separately
-- [ ] Promote scaled prediction only after the validation checklist passes
+- [ ] Calibrate production-facing probabilities only after independent human validation supports it
+- [ ] Promote scaled prediction only after the readiness gate passes and a manual review approves it
 
 ## v0.7 — durable cloud analytics
 
