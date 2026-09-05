@@ -24,11 +24,20 @@ def _good_metrics():
     }
 
 
+def _good_reviewer_audit():
+    return {
+        "status": "ready_for_inter_reviewer_analysis",
+        "repositories_with_multiple_reviewers": 75,
+        "duplicate_reviewer_repo_decisions": [],
+        "invalid_labels": [],
+    }
+
+
 def test_readiness_blocks_without_human_validation():
     progress = {"deep_snapshots": 1500}
     quality = {"warnings": []}
     human = {"status": "insufficient_human_review"}
-    report = evaluate(progress, quality, _good_metrics(), human)
+    report = evaluate(progress, quality, _good_metrics(), human, _good_reviewer_audit())
     assert report["eligible"] is False
     assert any("human-reviewed validation subset" in reason for reason in report["blocking_reasons"])
 
@@ -37,7 +46,7 @@ def test_readiness_allows_manual_review_when_all_gates_pass():
     progress = {"deep_snapshots": 1500}
     quality = {"warnings": []}
     human = {"status": "ready_for_comparison", "agreement_rate": 0.82}
-    report = evaluate(progress, quality, _good_metrics(), human)
+    report = evaluate(progress, quality, _good_metrics(), human, _good_reviewer_audit())
     assert report["eligible"] is True
     assert report["promotion_status"] == "eligible_for_manual_review"
     assert report["blocking_reasons"] == []
@@ -51,6 +60,7 @@ def test_readiness_blocks_large_weak_failure_slice():
         {"warnings": []},
         metrics,
         {"status": "ready_for_comparison", "agreement_rate": 0.82},
+        _good_reviewer_audit(),
     )
     assert report["eligible"] is False
     assert any("failure slice language/Python" in reason for reason in report["blocking_reasons"])
@@ -65,7 +75,36 @@ def test_readiness_requires_meaningful_temporal_support_per_class():
         {"warnings": []},
         metrics,
         {"status": "ready_for_comparison", "agreement_rate": 0.82},
+        _good_reviewer_audit(),
     )
     assert report["eligible"] is False
     assert any("temporal holdout has insufficient per-class test support" in reason for reason in report["blocking_reasons"])
     assert not any("temporal holdout macro F1 is below" in reason for reason in report["blocking_reasons"])
+
+
+def test_readiness_blocks_invalid_human_review_audit():
+    audit = _good_reviewer_audit()
+    audit["duplicate_reviewer_repo_decisions"] = ["org/repo:reviewer-a"]
+    report = evaluate(
+        {"deep_snapshots": 1500},
+        {"warnings": []},
+        _good_metrics(),
+        {"status": "ready_for_comparison", "agreement_rate": 0.82},
+        audit,
+    )
+    assert report["eligible"] is False
+    assert any("duplicate reviewer/repository decisions" in reason for reason in report["blocking_reasons"])
+
+
+def test_readiness_requires_multi_reviewer_overlap_when_human_subset_is_ready():
+    audit = _good_reviewer_audit()
+    audit["repositories_with_multiple_reviewers"] = 59
+    report = evaluate(
+        {"deep_snapshots": 1500},
+        {"warnings": []},
+        _good_metrics(),
+        {"status": "ready_for_comparison", "agreement_rate": 0.82},
+        audit,
+    )
+    assert report["eligible"] is False
+    assert any("fewer than 60 repositories have multiple independent reviewers" in reason for reason in report["blocking_reasons"])
