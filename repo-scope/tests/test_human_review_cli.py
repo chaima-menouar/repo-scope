@@ -4,7 +4,7 @@ import csv
 
 import pytest
 
-from scripts.review_human_labels import pending_reviews, save_review, visible_evidence
+from scripts.review_human_labels import load_assignments, pending_reviews, save_review, visible_evidence
 
 
 def test_visible_evidence_hides_automation_fields():
@@ -44,6 +44,26 @@ def test_pending_reviews_is_reviewer_specific():
 
     assert [row["repo"] for row in pending_for_a] == ["org/b"]
     assert [row["repo"] for row in pending_for_b] == ["org/a"]
+
+
+def test_assignment_filter_limits_reviewer_queue(tmp_path):
+    assignments = tmp_path / "assignments.csv"
+    with assignments.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["reviewer", "repo"])
+        writer.writeheader()
+        writer.writerow({"reviewer": "reviewer-a", "repo": "org/a"})
+        writer.writerow({"reviewer": "reviewer-b", "repo": "org/b"})
+
+    assigned = load_assignments(assignments, "reviewer-a")
+    pending = pending_reviews(
+        [{"repo": "org/a"}, {"repo": "org/b"}],
+        [],
+        "reviewer-a",
+        assigned,
+    )
+
+    assert assigned == {"org/a"}
+    assert [row["repo"] for row in pending] == ["org/a"]
 
 
 def test_save_review_requires_provenance_and_notes(tmp_path):
