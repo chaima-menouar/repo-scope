@@ -28,6 +28,24 @@ def _matrix_lines(section: dict) -> str:
     return "\n".join([header, divider, *rows])
 
 
+def _failure_slice_lines(failure_slices: dict) -> str:
+    dimensions = failure_slices.get("dimensions") or {}
+    if not dimensions:
+        return "Not available yet. Newer deep snapshots retain non-feature context for this analysis."
+    lines = []
+    for dimension, slices in dimensions.items():
+        if not slices:
+            continue
+        worst = slices[:3]
+        lines.append(f"**{dimension}**")
+        for item in worst:
+            lines.append(
+                f"- `{item.get('slice')}` — n={item.get('count')}, "
+                f"accuracy={item.get('accuracy')}, errors={item.get('error_count')}"
+            )
+    return "\n".join(lines) or "Not available yet."
+
+
 def build_model_card(progress_path: Path, quality_path: Path, metrics_path: Path) -> str:
     progress = _json(progress_path)
     quality = _json(quality_path)
@@ -37,6 +55,7 @@ def build_model_card(progress_path: Path, quality_path: Path, metrics_path: Path
     heldout = metrics.get("heldout", {})
     temporal = metrics.get("temporal_holdout", {})
     calibration = metrics.get("calibration", {})
+    failure_slices = metrics.get("failure_slices", {})
 
     warning = metrics.get("evaluation_warning") or "No automated evaluation warning was emitted."
     quality_warnings = quality.get("warnings") or []
@@ -135,6 +154,12 @@ The probability diagnostics are measured from repository-grouped out-of-fold pre
 ### Temporal holdout confusion matrix
 
 {_matrix_lines(temporal) if temporal.get('available') else 'Not available.'}
+
+### Worst out-of-fold failure slices
+
+{_failure_slice_lines(failure_slices)}
+
+Slice context such as language and repository size is retained only for evaluation and is not part of the risk model feature vector.
 
 ### Automated evaluation warning
 
