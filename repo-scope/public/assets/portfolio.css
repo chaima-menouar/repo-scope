@@ -1,3 +1,4 @@
+@import url('/assets/ml.css');
 :root{--electric:#7dd3fc;--indigo:#818cf8;--deep:#020617;--glass:rgba(8,15,30,.72)}
 body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-2;background-image:linear-gradient(rgba(125,211,252,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(125,211,252,.025) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 75%)}
 .nav{backdrop-filter:blur(18px);position:sticky;top:0;z-index:20;background:rgba(5,8,18,.7)}
