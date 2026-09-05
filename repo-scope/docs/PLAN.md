@@ -21,7 +21,10 @@
 ## v0.6 — experimental ML risk intelligence
 
 - [x] Collect 500+ diverse repository snapshots as the first scale milestone
-- [x] Build resumable 100k-catalog / 10k-deep-profile collection pipeline
+- [x] Build a resumable diversity-first catalog/deep-profile collection pipeline
+- [x] Complete the requested **60,000-repository catalog milestone** and stop further collection
+- [x] Accumulate **1,267 deep repository snapshots** before the 60k stop point
+- [x] Build **697 conservative weak-labelled snapshots** for experimental training
 - [x] Preserve accumulated deep snapshots when stratified manifests change
 - [x] Reject catalog/deep row regressions and duplicate repositories before committing progress
 - [x] Define an independent human labelling rubric (`healthy`, `watch`, `risky`)
@@ -37,12 +40,20 @@
 - [x] Gate scaled-model inference on minimum support for all three classes
 - [x] Measure out-of-fold probability reliability with log loss, multiclass Brier score and ECE
 - [x] Add automated weak-label vs human-review agreement reporting
+- [x] Add failure-slice diagnostics for language, repository size and maintenance style
 - [x] Add a machine-readable promotion-readiness gate with explicit blocking reasons
+- [x] Keep scaled prediction experimental while independent human validation is insufficient
 - [ ] Build a sufficiently large stratified human-reviewed validation subset
 - [ ] Calibrate production-facing probabilities only after independent human validation supports it
 - [ ] Promote scaled prediction only after the readiness gate passes and a manual review approves it
 
+### Current v0.6 status
+
+Automated ML evidence is complete for the requested collection scope. The remaining blockers are intentionally human-governed: independent validation, production probability calibration after that validation, and an explicit promotion decision. RepoScope must not fabricate human labels or automatically promote the experimental model.
+
 ## v0.7 — durable cloud analytics
+
+Deployment is intentionally deferred until the ML/data phase and portfolio review are accepted.
 
 - [ ] AWS ECR + App Runner/ECS deployment
 - [ ] DynamoDB/Postgres snapshots
