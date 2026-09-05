@@ -161,6 +161,21 @@ def get_languages(owner: str, repo: str, *, use_cache: bool = True) -> dict:
     return _cached_json(key, lambda: _request(f"/repos/{owner}/{repo}/languages").json(), use_cache=use_cache)
 
 
+def get_latest_release(owner: str, repo: str, *, use_cache: bool = True) -> dict | None:
+    """Return the latest GitHub release, or None when a repository has no releases."""
+    key = f"{owner}/{repo}/latest-release"
+
+    def fetch() -> dict | None:
+        try:
+            return _request(f"/repos/{owner}/{repo}/releases/latest").json()
+        except GitHubAPIError as exc:
+            if exc.status_code == 404:
+                return None
+            raise
+
+    return _cached_json(key, fetch, use_cache=use_cache, ttl=6 * 3600)
+
+
 def get_repository_paths(
     owner: str,
     repo: str,
