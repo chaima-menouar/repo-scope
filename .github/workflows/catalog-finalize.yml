@@ -81,19 +81,31 @@ jobs:
           payload['catalog_target'] = 60000
           payload['catalog_repositories'] = catalog_rows
           payload['collection_status'] = 'stopped_at_requested_60k_catalog_milestone'
+          payload['retrain_policy'] = 'final_refresh_at_stopped_60k_milestone_then_manual_only'
           progress_path.write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
           print(payload)
           PY
 
+      - name: Benchmark final stopped dataset
+        run: |
+          python scripts/benchmark_risk_models.py \
+            data/repo_risk_training_combined_100k.csv \
+            --output models/repo_risk_100k_benchmark.json
+
+      - name: Retrain final experimental model on all current labels
+        run: |
+          python scripts/train_risk_model.py \
+            data/repo_risk_training_combined_100k.csv \
+            --output models/repo_risk_100k.joblib \
+            > models/repo_risk_100k_metrics.json
+
       - name: Refresh model card and readiness
         run: |
-          if [ -f models/repo_risk_100k_metrics.json ]; then
-            python scripts/generate_model_card.py \
-              --progress data/repo_risk_100k_progress.json \
-              --quality data/repo_risk_100k_quality.json \
-              --metrics models/repo_risk_100k_metrics.json \
-              --output models/repo_risk_100k_model_card.md
-          fi
+          python scripts/generate_model_card.py \
+            --progress data/repo_risk_100k_progress.json \
+            --quality data/repo_risk_100k_quality.json \
+            --metrics models/repo_risk_100k_metrics.json \
+            --output models/repo_risk_100k_model_card.md
           python scripts/evaluate_model_readiness.py \
             --progress data/repo_risk_100k_progress.json \
             --quality data/repo_risk_100k_quality.json \
@@ -101,7 +113,7 @@ jobs:
             --human-comparison data/repo_risk_human_weak_comparison.json \
             --output models/repo_risk_100k_readiness.json
 
-      - name: Commit final 60k catalog and aligned reports
+      - name: Commit final 60k catalog and aligned ML reports
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -110,12 +122,15 @@ jobs:
             data/repository_catalog_100k.state.json \
             data/repo_risk_100k_progress.json \
             data/repo_risk_100k_quality.json \
+            models/repo_risk_100k_benchmark.json \
+            models/repo_risk_100k.joblib \
+            models/repo_risk_100k_metrics.json \
+            models/repo_risk_100k_model_card.md \
             models/repo_risk_100k_readiness.json
-          if [ -f models/repo_risk_100k_model_card.md ]; then git add -f models/repo_risk_100k_model_card.md; fi
           if git diff --cached --quiet; then
-            echo "Catalog and final reports already aligned at the requested 60k milestone"
+            echo "Catalog and final ML reports already aligned at the requested 60k milestone"
             exit 0
           fi
-          git commit -m "data: align final 60k catalog reports [skip ci]"
+          git commit -m "ml: finalize stopped 60k dataset and experimental model [skip ci]"
           git pull --rebase origin improve/portfolio-ai-cloud
           git push origin HEAD:improve/portfolio-ai-cloud
