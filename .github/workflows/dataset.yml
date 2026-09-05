@@ -6,6 +6,7 @@ on:
     paths:
       - "repo-scope/data/seed_repositories.txt"
       - "repo-scope/scripts/collect_training_data.py"
+      - "repo-scope/.gitignore"
       - ".github/workflows/dataset.yml"
   workflow_dispatch:
 
@@ -40,12 +41,13 @@ jobs:
         run: python scripts/collect_training_data.py
       - name: Commit refreshed dataset
         run: |
-          if git diff --quiet -- data/repo_risk_unlabelled.csv; then
+          if [ -z "$(git status --porcelain -- data/repo_risk_unlabelled.csv)" ]; then
             echo "Dataset unchanged"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/repo_risk_unlabelled.csv
+          git add -f data/repo_risk_unlabelled.csv
           git commit -m "data: refresh repository risk snapshots [skip ci]"
+          git pull --rebase origin improve/portfolio-ai-cloud
           git push origin HEAD:improve/portfolio-ai-cloud
