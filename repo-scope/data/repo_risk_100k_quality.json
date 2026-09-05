@@ -1,42 +1,47 @@
 {
   "catalog": {
-    "rows": 15000,
-    "active": 13795,
-    "archived": 1205,
+    "rows": 20000,
+    "active": 17795,
+    "archived": 2205,
     "languages": {
       "Python": 5835,
-      "JavaScript": 4121,
+      "JavaScript": 5121,
       "TypeScript": 1801,
+      "Ruby": 1000,
+      "PHP": 989,
       "Rust": 978,
       "Go": 973,
+      "C#": 963,
       "Java": 944,
-      "C++": 345,
+      "C++": 736,
+      "Kotlin": 657,
       "unknown": 3
     },
     "licenses": {
-      "unknown": 6325,
-      "MIT": 4886,
-      "Apache-2.0": 1501,
-      "NOASSERTION": 1054,
-      "AGPL-3.0": 490,
-      "GPL-3.0": 438,
-      "BSD-3-Clause": 52,
-      "GPL-2.0": 46,
-      "CC0-1.0": 43,
-      "MPL-2.0": 38,
-      "Unlicense": 24,
-      "BSD-2-Clause": 20,
-      "ISC": 16,
-      "LGPL-3.0": 14,
-      "CC-BY-4.0": 10,
+      "unknown": 9668,
+      "MIT": 5928,
+      "Apache-2.0": 1626,
+      "NOASSERTION": 1262,
+      "AGPL-3.0": 553,
+      "GPL-3.0": 544,
+      "GPL-2.0": 80,
+      "BSD-3-Clause": 76,
+      "CC0-1.0": 50,
+      "MPL-2.0": 46,
+      "Unlicense": 31,
+      "BSD-2-Clause": 28,
+      "ISC": 21,
+      "LGPL-3.0": 20,
+      "LGPL-2.1": 12,
+      "CC-BY-4.0": 11,
+      "MIT-0": 11,
       "CC-BY-SA-4.0": 7,
-      "LGPL-2.1": 7,
-      "MIT-0": 7,
+      "0BSD": 6,
       "EUPL-1.2": 6,
-      "0BSD": 3,
       "WTFPL": 3,
       "CERN-OHL-S-2.0": 2,
       "UPL-1.0": 2,
+      "BSL-1.0": 1,
       "CERN-OHL-P-2.0": 1,
       "CERN-OHL-W-2.0": 1,
       "EPL-2.0": 1,
@@ -51,7 +56,7 @@
       },
       "language": {
         "missing": 3,
-        "missing_pct": 0.02
+        "missing_pct": 0.015
       },
       "created_at": {
         "missing": 0,
@@ -70,27 +75,27 @@
         "missing_pct": 0.0
       },
       "license": {
-        "missing": 6325,
-        "missing_pct": 42.167
+        "missing": 9668,
+        "missing_pct": 48.34
       }
     }
   },
   "training": {
-    "rows": 333,
-    "unique_repositories": 333,
+    "rows": 341,
+    "unique_repositories": 341,
     "labels": {
-      "healthy": 285,
-      "risky": 44,
+      "healthy": 289,
+      "risky": 48,
       "watch": 4
     },
     "label_balance": {
-      "healthy": 0.8559,
-      "risky": 0.1321,
-      "watch": 0.012
+      "healthy": 0.8475,
+      "risky": 0.1408,
+      "watch": 0.0117
     },
     "label_sources": {
-      "recent_release_evidence": 285,
-      "github_archived_flag": 44,
+      "recent_release_evidence": 289,
+      "github_archived_flag": 48,
       "stale_release_evidence": 4
     },
     "feature_missingness": {
@@ -130,8 +135,7 @@
   },
   "warnings": [
     "at least one label class has fewer than 20 examples",
-    "label distribution is highly imbalanced",
-    "archived repositories are under-represented in the catalog"
+    "label distribution is highly imbalanced"
   ],
   "status": "needs_review"
 }
