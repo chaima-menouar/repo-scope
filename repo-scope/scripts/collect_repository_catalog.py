@@ -59,25 +59,39 @@ def _load_rows(path: Path) -> dict[str, dict[str, str]]:
         return {row["repo"]: row for row in csv.DictReader(handle) if row.get("repo")}
 
 
-def _load_state(path: Path) -> int:
+def _load_state(path: Path) -> tuple[int, int]:
     if not path.exists():
-        return 0
+        return 0, 1
     try:
-        return max(0, int(json.loads(path.read_text(encoding="utf-8")).get("partition_index", 0)))
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        partition_index = max(0, int(payload.get("partition_index", 0)))
+        page = max(1, min(10, int(payload.get("page", 1))))
+        return partition_index, page
     except (ValueError, TypeError, json.JSONDecodeError):
-        return 0
+        return 0, 1
 
 
 def _write_checkpoint(
-    *, rows: dict[str, dict[str, str]], output: Path, state_path: Path, partition_index: int, target: int
+    *,
+    rows: dict[str, dict[str, str]],
+    output: Path,
+    state_path: Path,
+    partition_index: int,
+    page: int,
+    target: int,
 ) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("w", newline="", encoding="utf-8") as handle:
+    temporary = output.with_suffix(output.suffix + ".tmp")
+    with temporary.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDS)
         writer.writeheader()
         writer.writerows(list(rows.values())[:target])
+    temporary.replace(output)
     state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(json.dumps({"partition_index": partition_index}, indent=2) + "\n", encoding="utf-8")
+    state_path.write_text(
+        json.dumps({"partition_index": partition_index, "page": page}, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def _request(session: requests.Session, query: str, page: int) -> list[dict]:
@@ -121,9 +135,10 @@ def _row(item: dict) -> dict[str, object]:
 def collect(target: int, output: Path, state_path: Path, max_new: int) -> dict[str, int]:
     rows = _load_rows(output)
     partitions = _partitions()
-    partition_index = min(_load_state(state_path), len(partitions))
+    partition_index, start_page = _load_state(state_path)
+    partition_index = min(partition_index, len(partitions))
     if len(rows) >= target:
-        return {"total": len(rows), "added": 0, "partition_index": partition_index}
+        return {"total": len(rows), "added": 0, "partition_index": partition_index, "page": start_page}
 
     session = requests.Session()
     session.headers.update(_headers())
@@ -132,14 +147,19 @@ def collect(target: int, output: Path, state_path: Path, max_new: int) -> dict[s
 
     while partition_index < len(partitions) and len(rows) < target and added < max_new:
         archived, language, stars, year = partitions[partition_index]
+        # GitHub repository search excludes forks by default, so no fork:false qualifier is needed.
         query = (
-            f"language:{language} stars:{stars} fork:false archived:{str(archived).lower()} "
+            f"language:{language} stars:{stars} archived:{str(archived).lower()} "
             f"created:{year}-01-01..{year}-12-31"
         )
-        for page in range(1, 11):
+        page = start_page
+        partition_finished = False
+        while page <= 10 and len(rows) < target and added < max_new:
             items = _request(session, query, page)
             if not items:
+                partition_finished = True
                 break
+            hit_batch_limit = False
             for item in items:
                 record = _row(item)
                 repo = str(record["repo"])
@@ -152,25 +172,73 @@ def collect(target: int, output: Path, state_path: Path, max_new: int) -> dict[s
                             output=output,
                             state_path=state_path,
                             partition_index=partition_index,
+                            page=page,
                             target=target,
                         )
                         last_checkpoint = added
                         print(f"checkpoint: total={len(rows)} added={added}", flush=True)
                     if len(rows) >= target or added >= max_new:
+                        hit_batch_limit = True
                         break
-            if len(rows) >= target or added >= max_new or len(items) < 100:
+            if hit_batch_limit:
+                # Resume this same page next time. Existing repository identities are deduplicated,
+                # so already-processed items are harmless and the remainder is not skipped.
+                _write_checkpoint(
+                    rows=rows,
+                    output=output,
+                    state_path=state_path,
+                    partition_index=partition_index,
+                    page=page,
+                    target=target,
+                )
+                return {
+                    "total": min(len(rows), target),
+                    "added": added,
+                    "partition_index": partition_index,
+                    "page": page,
+                }
+            if len(items) < 100:
+                partition_finished = True
                 break
+            page += 1
+            _write_checkpoint(
+                rows=rows,
+                output=output,
+                state_path=state_path,
+                partition_index=partition_index,
+                page=page,
+                target=target,
+            )
             time.sleep(2.1)
-        partition_index += 1
+
+        if partition_finished or page > 10:
+            partition_index += 1
+            start_page = 1
+            _write_checkpoint(
+                rows=rows,
+                output=output,
+                state_path=state_path,
+                partition_index=partition_index,
+                page=1,
+                target=target,
+            )
+        else:
+            start_page = page
 
     _write_checkpoint(
         rows=rows,
         output=output,
         state_path=state_path,
         partition_index=partition_index,
+        page=start_page,
         target=target,
     )
-    return {"total": min(len(rows), target), "added": added, "partition_index": partition_index}
+    return {
+        "total": min(len(rows), target),
+        "added": added,
+        "partition_index": partition_index,
+        "page": start_page,
+    }
 
 
 def main() -> None:
@@ -183,7 +251,7 @@ def main() -> None:
     result = collect(args.target, Path(args.output), Path(args.state), args.max_new)
     print(
         f"catalog: total={result['total']} added={result['added']} "
-        f"partition_index={result['partition_index']} target={args.target}"
+        f"partition_index={result['partition_index']} page={result['page']} target={args.target}"
     )
 
 
