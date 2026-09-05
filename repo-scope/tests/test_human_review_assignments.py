@@ -52,6 +52,29 @@ def test_assignment_planner_balances_language_order_before_private_split():
     assert counts == {"reviewer-a": 2, "reviewer-b": 2}
 
 
+def test_assignment_planner_deduplicates_repository_rows():
+    rows = [
+        _row("org/a", "Python"),
+        _row("org/a", "Python"),
+        _row("org/b", "Java"),
+        _row("org/c", "Go"),
+    ]
+
+    assignments = build_assignments(
+        rows,
+        ["reviewer-a", "reviewer-b"],
+        per_reviewer=2,
+        overlap=1,
+    )
+
+    by_reviewer: dict[str, list[str]] = defaultdict(list)
+    for row in assignments:
+        by_reviewer[row["reviewer"]].append(row["repo"])
+
+    assert len(by_reviewer["reviewer-a"]) == len(set(by_reviewer["reviewer-a"]))
+    assert len(by_reviewer["reviewer-b"]) == len(set(by_reviewer["reviewer-b"]))
+
+
 def test_assignment_planner_rejects_duplicate_reviewer_ids():
     with pytest.raises(ValueError, match="unique"):
         build_assignments([_row("org/a", "Python")], ["reviewer-a", "reviewer-a"], per_reviewer=1, overlap=1)
