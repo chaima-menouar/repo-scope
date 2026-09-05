@@ -4,34 +4,7 @@ import argparse
 import csv
 from pathlib import Path
 
-
-def assign_label(row: dict[str, str]) -> tuple[str, str, str] | None:
-    """Assign conservative weak labels from evidence not used as model features."""
-    archived = str(row.get("archived", "")).strip() == "1"
-    release_age_raw = str(row.get("latest_release_age_days", "")).strip()
-
-    if archived:
-        return "risky", "github_archived_flag", "GitHub marks this repository as archived."
-
-    if not release_age_raw:
-        return None
-
-    try:
-        release_age = int(float(release_age_raw))
-    except ValueError:
-        return None
-
-    if release_age <= 180:
-        return (
-            "healthy",
-            "recent_release_evidence",
-            f"Latest GitHub release is {release_age} days old.",
-        )
-    return (
-        "watch",
-        "stale_release_evidence",
-        f"Latest GitHub release is {release_age} days old; repository is not archived.",
-    )
+from repo_scope.ml.labels import assign_weak_label
 
 
 def build_training_csv(source: Path, output: Path) -> dict:
@@ -41,7 +14,7 @@ def build_training_csv(source: Path, output: Path) -> dict:
     labelled: list[dict[str, str]] = []
     counts: dict[str, int] = {}
     for row in rows:
-        assignment = assign_label(row)
+        assignment = assign_weak_label(row)
         if assignment is None:
             continue
         label, label_source, label_evidence = assignment
