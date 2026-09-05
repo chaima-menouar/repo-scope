@@ -66,13 +66,34 @@ jobs:
 
       - name: Derive stratified deep-analysis manifest from catalog
         run: |
+          WATCH=$(python - <<'PY'
+          import csv
+          from pathlib import Path
+          path = Path('data/repo_risk_training_combined_100k.csv')
+          if not path.exists():
+              print(0)
+          else:
+              with path.open(encoding='utf-8', newline='') as handle:
+                  print(sum(1 for row in csv.DictReader(handle) if (row.get('label') or '').strip() == 'watch'))
+          PY
+          )
+          if [ "$WATCH" -lt 20 ]; then
+            echo "watch support is $WATCH; using targeted stale-active sampling"
+            ARCHIVED_FRACTION=0.10
+            STALE_FRACTION=0.75
+            STALE_DAYS=180
+          else
+            ARCHIVED_FRACTION=0.20
+            STALE_FRACTION=0.35
+            STALE_DAYS=365
+          fi
           python scripts/build_deep_manifest.py \
             --catalog data/repository_catalog_100k.csv \
             --output data/seed_repositories_100k.txt \
             --target 10000 \
-            --archived-fraction 0.20 \
-            --stale-active-fraction 0.35 \
-            --stale-after-days 365
+            --archived-fraction "$ARCHIVED_FRACTION" \
+            --stale-active-fraction "$STALE_FRACTION" \
+            --stale-after-days "$STALE_DAYS"
 
       - name: Collect next deep repository batch
         env:
