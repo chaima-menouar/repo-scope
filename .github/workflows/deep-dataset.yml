@@ -33,30 +33,15 @@ jobs:
       - name: Install RepoScope with ML dependencies
         run: pip install -e ".[ml]"
 
-      - name: Check core API budget before deep collection
+      - name: Report dataset authentication mode
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HAS_DATA_TOKEN: ${{ secrets.REPOSCOPE_DATA_GITHUB_TOKEN != '' }}
         run: |
-          python - <<'PY'
-          import os, time, requests
-          headers = {
-              'Accept': 'application/vnd.github+json',
-              'Authorization': f"Bearer {os.environ['GITHUB_TOKEN']}",
-              'X-GitHub-Api-Version': '2022-11-28',
-          }
-          payload = requests.get('https://api.github.com/rate_limit', headers=headers, timeout=20).json()
-          core = payload.get('resources', {}).get('core', {})
-          remaining = int(core.get('remaining', 0))
-          reset = int(core.get('reset', 0))
-          print(f"core API remaining={remaining} reset={reset}")
-          if remaining < 850:
-              wait = max(0, reset - int(time.time()) + 5)
-              if wait > 1800:
-                  raise SystemExit(f"core API budget too low ({remaining}) and reset is too far away ({wait}s)")
-              if wait:
-                  print(f"waiting {wait}s for core API reset before deep collection", flush=True)
-                  time.sleep(wait)
-          PY
+          if [ "$HAS_DATA_TOKEN" = "true" ]; then
+            echo "Using dedicated RepoScope data token for cross-repository public API collection"
+          else
+            echo "Using built-in GitHub Actions token/public fallback; collector will honor real response rate-limit headers"
+          fi
 
       - name: Derive targeted deep-analysis manifest
         run: |
@@ -91,7 +76,7 @@ jobs:
 
       - name: Collect next deep repository batch
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.REPOSCOPE_DATA_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           GITHUB_MAX_PAGES: "1"
         run: |
           python scripts/collect_training_data.py \
