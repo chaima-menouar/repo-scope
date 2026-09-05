@@ -26,13 +26,11 @@ on:
       - "repo-scope/pyproject.toml"
       - "repo-scope/.gitignore"
       - ".github/workflows/dataset.yml"
-  schedule:
-    - cron: "17 * * * *"
   workflow_dispatch:
 
 concurrency:
-  group: reposcope-dataset-100k-v3
-  cancel-in-progress: true
+  group: reposcope-dataset-writer-v1
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -56,12 +54,12 @@ jobs:
       - name: Install RepoScope with ML dependencies
         run: pip install -e ".[ml]"
 
-      - name: Build or advance 100k repository catalog
+      - name: Build or advance 60k repository catalog
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python scripts/collect_repository_catalog.py \
-            --target 100000 \
+            --target 60000 \
             --output data/repository_catalog_100k.csv \
             --state data/repository_catalog_100k.state.json \
             --max-new 5000
@@ -102,14 +100,25 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_MAX_PAGES: "1"
         run: |
-          python scripts/collect_training_data.py \
-            --repos data/seed_repositories_100k.txt \
-            --catalog data/repository_catalog_100k.csv \
-            --output data/repo_risk_unlabelled_100k.csv \
-            --workers 6 \
-            --resume \
-            --limit 130 \
-            --checkpoint-every 25
+          CATALOG_ROWS=$(python - <<'PY'
+          import csv
+          from pathlib import Path
+          p=Path('data/repository_catalog_100k.csv')
+          print(sum(1 for _ in csv.DictReader(p.open(encoding='utf-8'))) if p.exists() else 0)
+          PY
+          )
+          if [ "$CATALOG_ROWS" -ge 60000 ]; then
+            echo "Catalog reached $CATALOG_ROWS; stopping deep collection at the 60k milestone"
+          else
+            python scripts/collect_training_data.py \
+              --repos data/seed_repositories_100k.txt \
+              --catalog data/repository_catalog_100k.csv \
+              --output data/repo_risk_unlabelled_100k.csv \
+              --workers 6 \
+              --resume \
+              --limit 130 \
+              --checkpoint-every 25
+          fi
 
       - name: Reject dataset regressions
         run: |
@@ -231,7 +240,7 @@ jobs:
                   return sum(1 for _ in csv.DictReader(f))
 
           payload = {
-              'catalog_target': 100000,
+              'catalog_target': 60000,
               'catalog_repositories': count_csv('data/repository_catalog_100k.csv'),
               'deep_profile_target': 10000,
               'deep_snapshots': count_csv('data/repo_risk_unlabelled_100k.csv'),
@@ -295,6 +304,6 @@ jobs:
             echo "Dataset progress unchanged"
             exit 0
           fi
-          git commit -m "ml: advance 100k catalog and deep dataset [skip ci]"
+          git commit -m "ml: advance 60k catalog and dataset [skip ci]"
           git pull --rebase origin improve/portfolio-ai-cloud
           git push origin HEAD:improve/portfolio-ai-cloud
