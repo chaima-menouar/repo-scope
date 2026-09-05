@@ -15,6 +15,7 @@ FEATURE_COLUMNS = [
     "has_ci",
     "has_tests",
 ]
+EXPECTED_LABELS = {"healthy", "watch", "risky"}
 
 
 def _validate_training_frame(frame) -> None:
@@ -28,8 +29,18 @@ def _validate_training_frame(frame) -> None:
         raise ValueError("Every training row must have a non-empty evidence-backed or human-reviewed label.")
     if frame["repo"].isna().any() or frame["repo"].astype(str).str.strip().eq("").any():
         raise ValueError("Every training row must identify its repository in the 'repo' column.")
-    if frame["label"].nunique() < 2:
-        raise ValueError("Training data must contain at least two label classes.")
+    labels = set(frame["label"].astype(str).str.strip())
+    if labels != EXPECTED_LABELS:
+        missing_labels = sorted(EXPECTED_LABELS - labels)
+        unexpected = sorted(labels - EXPECTED_LABELS)
+        details = []
+        if missing_labels:
+            details.append(f"missing classes: {', '.join(missing_labels)}")
+        if unexpected:
+            details.append(f"unexpected classes: {', '.join(unexpected)}")
+        raise ValueError(
+            "RepoScope risk training requires exactly healthy, watch and risky labels (" + "; ".join(details) + ")."
+        )
     if frame["repo"].nunique() < 4:
         raise ValueError("Training data must contain at least four distinct repositories.")
 
@@ -105,9 +116,9 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
 
     if set(train_repos) & set(test_repos):
         raise RuntimeError("Repository leakage detected between train and test splits.")
-    if y_train.nunique() < 2:
+    if set(y_train) != EXPECTED_LABELS:
         raise ValueError(
-            "The repository-level split left the training set with fewer than two classes. "
+            "The repository-level split did not preserve all three risk classes in training. "
             "Add more labelled repositories per class."
         )
 
