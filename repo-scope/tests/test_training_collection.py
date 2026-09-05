@@ -14,9 +14,16 @@ def _row(repo: str) -> dict:
         "contributors_sampled": 5,
         "has_ci": 1,
         "has_tests": 1,
+        "snapshot_at_utc": "2026-09-05T00:00:00+00:00",
         "archived": 0,
         "latest_release_age_days": 20,
         "latest_release_at": "2026-08-01T00:00:00Z",
+        "language": "Python",
+        "stars": 10,
+        "forks": 1,
+        "open_issues": 2,
+        "size_kb": 100,
+        "catalog_pushed_at": "2026-09-01T00:00:00Z",
         "label": "",
     }
 
@@ -59,6 +66,37 @@ def test_deep_collection_checkpoints_and_resumes_without_duplicates(tmp_path, mo
     assert failures == []
     assert calls == ["org/c"]
     assert set(collector.load_existing(output)) == set(repositories)
+
+
+def test_manifest_changes_never_drop_previously_collected_snapshots(tmp_path, monkeypatch):
+    output = tmp_path / "deep.csv"
+
+    def fake_collect(repo: str, catalog_row=None) -> dict:
+        return _row(repo)
+
+    monkeypatch.setattr(collector, "_collect_one", fake_collect)
+
+    total, failures, _ = collector.collect(
+        ["org/a", "org/b"],
+        output,
+        workers=1,
+        resume=True,
+        checkpoint_every=1,
+    )
+    assert total == 2
+    assert failures == []
+
+    total, failures, previous = collector.collect(
+        ["org/b", "org/c"],
+        output,
+        workers=1,
+        resume=True,
+        checkpoint_every=1,
+    )
+    assert previous == 2
+    assert total == 3
+    assert failures == []
+    assert set(collector.load_existing(output)) == {"org/a", "org/b", "org/c"}
 
 
 def test_collection_passes_catalog_metadata_to_worker(tmp_path, monkeypatch):
