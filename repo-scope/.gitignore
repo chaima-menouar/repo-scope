@@ -11,6 +11,7 @@ build/
 reports/
 models/
 !models/
+!models/.gitkeep
 !models/repo_risk.joblib
 !models/repo_risk_metrics.json
 data/*.csv
