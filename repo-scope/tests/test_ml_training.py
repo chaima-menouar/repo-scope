@@ -5,7 +5,7 @@ import hashlib
 
 import joblib
 
-from repo_scope.ml.training import FEATURE_COLUMNS, train_from_csv
+from repo_scope.ml.training import FEATURE_COLUMNS, LABEL_ORDER, train_from_csv
 
 
 def _write_training_csv(path):
@@ -50,6 +50,12 @@ def test_training_uses_repository_level_split_and_saves_metadata(tmp_path):
     assert result["trained_at_utc"]
     assert result["model_type"] == "RandomForestClassifier"
     assert result["scikit_learn_version"]
+    assert result["cross_validation"]["labels"] == LABEL_ORDER
+    assert 0 <= result["cross_validation"]["balanced_accuracy"] <= 1
+    assert len(result["cross_validation"]["confusion_matrix"]) == 3
+    assert result["heldout"]["labels"] == LABEL_ORDER
+    assert 0 <= result["heldout"]["balanced_accuracy"] <= 1
+    assert len(result["heldout"]["confusion_matrix"]) == 3
     assert model_path.exists()
 
     artifact = joblib.load(model_path)
