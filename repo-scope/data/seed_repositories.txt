@@ -46,3 +46,5 @@ Textualize/rich
 encode/starlette
 pallets/click
 httpie/cli
+
+# Updating this manifest intentionally retriggers the reproducible dataset pipeline.
