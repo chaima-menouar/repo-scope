@@ -17,6 +17,7 @@
 - **1,267** deep repository snapshots with timestamped engineering evidence
 - **697** conservative weak-labelled snapshots for experimental ML
 - Durable blind human-review queue and human-label override path
+- Blind human-review CLI with reviewer provenance and evidence-note safeguards
 - Dataset quality, grouped evaluation, temporal validation, calibration diagnostics and failure-slice analysis
 - Random Forest experimental risk baseline with versioned feature schema and reproducible provenance
 - Machine-readable model readiness and explicit manual promotion approval
@@ -131,6 +132,20 @@ The final v0.6 research snapshot contains **60,000 catalog repositories**, **1,2
 Evaluation is repository-aware: `StratifiedGroupKFold` produces out-of-fold predictions, a grouped holdout checks generalization, and a chronological holdout checks newer repositories without identity leakage. The pipeline also reports per-class metrics, balanced accuracy, calibration diagnostics and failure slices by non-feature context.
 
 The latest trained experimental model is evaluated on all 697 weak-labelled repositories after isolated evaluation and final refit. Grouped cross-validation reports roughly **81.0% macro F1** and **81.3% balanced accuracy**, with expected calibration error around **0.068**. These are weak-supervision research metrics, not independently validated production accuracy.
+
+## Human validation workflow
+
+The next validation step must be performed by real reviewers. RepoScope includes a blind review CLI that reads `data/repo_risk_human_review_queue.csv` but does not expose weak labels, model predictions, confidence, health scores or queue reasons that reveal the weak-label rule.
+
+Run from `repo-scope/`:
+
+```bash
+python scripts/review_human_labels.py --reviewer reviewer-a --limit 20
+```
+
+The tool shows review-safe repository evidence and the GitHub URL, then stores approved decisions in `data/repo_risk_human_labels.csv`. Reviewer identity and evidence-based notes are mandatory. Existing durable reviews are protected from accidental overwrite.
+
+Human reviewers should follow `docs/HUMAN_LABEL_RUBRIC.md` and inspect public repository evidence independently before assigning `healthy`, `watch` or `risky`.
 
 ## Model governance
 
