@@ -15,6 +15,7 @@ Before assigning a label, the reviewer should not be shown:
 - RepoScope health score or health label;
 - weak label or weak-label source;
 - ML prediction, probability, or feature importance;
+- review-queue reasons that reveal weak-label boundary logic;
 - another reviewer's label before making an independent judgement.
 
 The reviewer may inspect public repository evidence that a real maintainer or engineering team could observe, including repository activity, releases, unresolved issues, pull-request flow, contributor continuity, documentation, CI status, tests, deprecation notices, and maintenance statements.
@@ -84,6 +85,20 @@ For each candidate repository:
 9. Write a short evidence-based `review_notes` explanation.
 10. Record `reviewer` and `reviewed_at_utc`.
 
+## Blind review CLI
+
+RepoScope includes an interactive reviewer tool that reads the candidate queue but deliberately hides automation-derived fields such as `review_reason`, weak labels, model predictions, confidence values and health scores.
+
+Run it from `repo-scope/`:
+
+```bash
+python scripts/review_human_labels.py --reviewer reviewer-a --limit 20
+```
+
+The CLI shows the repository URL and only review-safe evidence fields, then records the human decision in `data/repo_risk_human_labels.csv`. Evidence-based notes and a reviewer identifier are mandatory. Existing durable reviews cannot be overwritten accidentally; replacement must be an explicit adjudication step in code or tooling rather than a silent duplicate.
+
+The tool does **not** inspect the repository or decide the label automatically. The human reviewer must inspect public evidence and apply this rubric independently.
+
 ## Evidence hierarchy
 
 Prefer direct repository evidence over proxies:
@@ -101,7 +116,7 @@ Stars, forks, repository age, programming language, and organization prestige mu
 
 If the evidence is genuinely mixed, prefer `watch` and explain the conflict in `review_notes`.
 
-If there is too little evidence to make a defensible judgement, do not invent a label. Leave the repository unreviewed and note why outside the durable label registry until sufficient evidence is available.
+If there is too little evidence to make a defensible judgement, do not invent a label. Leave the repository unreviewed until sufficient evidence is available.
 
 ## Quality-control protocol
 
@@ -125,7 +140,7 @@ Approved human labels belong in:
 Expected fields:
 
 - `repo`
-- `label`
+- `human_label`
 - `review_notes`
 - `reviewer`
 - `reviewed_at_utc`
