@@ -19,6 +19,33 @@ RepoScope separates broad discovery from expensive deep profiling:
 
 A target is never presented as completed data until the generated artifacts verify it.
 
+### Diversity-first catalog sampling
+
+The catalog collector partitions GitHub search by:
+
+- language;
+- star bucket;
+- creation year;
+- archived vs active state.
+
+Partitions are interleaved so a bounded run does not consume one language or maintenance state first. Each stratum contributes at most the first **100 repositories** instead of walking up to GitHub's 1,000-search-result ceiling for that query. This intentionally favors breadth across many strata over depth inside one stratum.
+
+### Deep-profile sampling
+
+The deep manifest is built separately from the catalog. It round-robins language and popularity strata and interleaves:
+
+- archived repositories;
+- recent active repositories;
+- stale active repositories, based only on `pushed_at` as a **sampling proxy**.
+
+The stale-active proxy is never used as a training target. It only improves the chance of collecting enough independently labelled `watch` examples without leaking the weak-label rule into the model feature vector.
+
+### API-efficient deep collection
+
+The ML collector reuses repository metadata that already exists in the catalog instead of requesting it again. It also omits the languages endpoint because language bytes are not one of the eight ML features. Deep snapshots therefore need roughly six core REST calls instead of the full interactive profile's larger request set.
+
+The Actions workflow currently uses a conservative batch size of **130 repositories** with six workers and one GitHub API page per sampled endpoint. Checkpoints are written every 25 successful repositories.
+
 ## Dataset unit
 
 One row = one repository at one point in time.
@@ -47,14 +74,14 @@ The existing health score is **never used to create the ML label**, which avoids
 The root workflow `.github/workflows/dataset.yml` performs the experimental pipeline:
 
 1. incrementally build `data/repository_catalog_100k.csv`;
-2. derive a deep-analysis manifest with active and archived representation;
-3. collect deep repository snapshots into `data/repo_risk_unlabelled_100k.csv`;
+2. derive a diverse deep-analysis manifest with active, archived and stale-active representation;
+3. collect deep repository snapshots into `data/repo_risk_unlabelled_100k.csv` using catalog metadata to reduce API cost;
 4. apply conservative weak labels with `scripts/bootstrap_weak_labels.py`;
-5. leave ambiguous repositories out of the training set;
+5. leave ambiguous repositories out of the training set and export them to the human-review queue;
 6. generate `data/repo_risk_100k_quality.json`;
-7. train only when enough labelled rows exist and the dataset changed;
-8. write the model and evaluation metrics under `models/`;
-9. commit progress so the next scheduled run resumes from durable state.
+7. train only when all three classes have at least 20 repositories and the retraining milestone is reached;
+8. write the model, evaluation metrics and generated model card under `models/`;
+9. commit progress so the next eligible workflow run resumes from durable state.
 
 ## Weak-label policy
 
@@ -93,17 +120,22 @@ The training pipeline uses:
 - **StratifiedGroupKFold** cross-validation when class support allows it;
 - a separate **GroupShuffleSplit** holdout;
 - per-class precision, recall and F1;
-- macro F1 and accuracy for grouped cross-validation;
+- macro F1, raw accuracy and **balanced accuracy**;
+- confusion matrices for both grouped cross-validation and holdout evaluation;
 - train/test repository counts;
 - class counts and label sources;
 - feature importance;
-- explicit warnings when the weakly-labelled dataset is too small or results look suspiciously optimistic.
+- explicit warnings when the weakly-labelled dataset is too small, minority-class performance is weak, or results look suspiciously optimistic.
+
+Balanced accuracy and confusion matrices are first-class outputs because raw accuracy can look excellent while a minority class is effectively ignored.
 
 A near-perfect score on a small weakly-labelled dataset is treated as a reason to investigate task simplicity or label artifacts, not as proof of production generalization.
 
 ## Model status
 
 The dashboard identifies this model as **experimental weak supervision**. Its class probabilities are not described as calibrated production probabilities.
+
+The scaled artifact is only eligible for default inference after all three classes have meaningful support. Otherwise RepoScope safely falls back to the verified legacy experimental baseline.
 
 ## Promotion checklist
 
@@ -115,6 +147,7 @@ The model should only move beyond `experimental_weak_supervision` after all of t
 - a repository-grouped holdout with no identity leakage;
 - a temporal holdout using repositories/snapshots newer than the training cutoff;
 - per-class precision, recall and F1 reviewed, not accuracy alone;
+- balanced accuracy and confusion matrices reviewed for minority-class collapse;
 - calibration measured before exposing probability-like scores as confidence;
 - failure cases inspected across language, repository size and maintenance style;
 - weak-label and human-label performance compared separately;
@@ -127,9 +160,11 @@ Until then, RepoScope keeps the deterministic health score as the primary explai
 
 ```bash
 pip install -e ".[ml]"
-python scripts/collect_repository_catalog.py --target 100000 --max-new 5000
-python scripts/collect_training_data.py --repos data/seed_repositories_100k.txt --output data/repo_risk_unlabelled_100k.csv --resume --limit 500
+python scripts/collect_repository_catalog.py --target 100000 --output data/repository_catalog_100k.csv --state data/repository_catalog_100k.state.json --max-new 5000
+python scripts/build_deep_manifest.py --catalog data/repository_catalog_100k.csv --output data/seed_repositories_100k.txt --target 10000 --archived-fraction 0.20 --stale-active-fraction 0.35
+python scripts/collect_training_data.py --repos data/seed_repositories_100k.txt --catalog data/repository_catalog_100k.csv --output data/repo_risk_unlabelled_100k.csv --workers 6 --resume --limit 130 --checkpoint-every 25
 python scripts/bootstrap_weak_labels.py --input data/repo_risk_unlabelled_100k.csv --output data/repo_risk_training_100k.csv
 python scripts/report_dataset_quality.py --catalog data/repository_catalog_100k.csv --training data/repo_risk_training_100k.csv
 python scripts/train_risk_model.py data/repo_risk_training_100k.csv --output models/repo_risk_100k.joblib
+python scripts/generate_model_card.py --progress data/repo_risk_100k_progress.json --quality data/repo_risk_100k_quality.json --metrics models/repo_risk_100k_metrics.json --output models/repo_risk_100k_model_card.md
 ```
