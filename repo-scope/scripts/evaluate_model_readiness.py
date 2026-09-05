@@ -41,11 +41,28 @@ def evaluate(progress: dict, quality: dict, metrics: dict, human_comparison: dic
     if _number(cv.get("balanced_accuracy")) < 0.65:
         reasons.append("grouped cross-validation balanced accuracy is below 0.65")
 
+    temporal_min_class_support = 10
     if not temporal.get("available"):
         reasons.append("temporal holdout is not available")
     else:
-        if _number(temporal.get("macro_f1")) < 0.60:
-            reasons.append("temporal holdout macro F1 is below 0.60")
+        temporal_counts = temporal.get("test_class_counts", {}) or {}
+        insufficient_temporal_classes = [
+            label
+            for label in ("healthy", "watch", "risky")
+            if int(temporal_counts.get(label, 0) or 0) < temporal_min_class_support
+        ]
+        if insufficient_temporal_classes:
+            details = ", ".join(
+                f"{label}={int(temporal_counts.get(label, 0) or 0)}"
+                for label in insufficient_temporal_classes
+            )
+            reasons.append(
+                "temporal holdout has insufficient per-class test support "
+                f"(minimum {temporal_min_class_support}; {details})"
+            )
+        else:
+            if _number(temporal.get("macro_f1")) < 0.60:
+                reasons.append("temporal holdout macro F1 is below 0.60")
         if temporal.get("missing_test_classes"):
             reasons.append("temporal holdout does not contain all three risk classes")
 
@@ -88,6 +105,7 @@ def evaluate(progress: dict, quality: dict, metrics: dict, human_comparison: dic
             "cv_macro_f1_min": 0.65,
             "cv_balanced_accuracy_min": 0.65,
             "temporal_macro_f1_min": 0.60,
+            "temporal_each_test_class_min": temporal_min_class_support,
             "ece_max": 0.15,
             "required_failure_slice_dimensions": sorted(required_slice_dimensions),
             "large_slice_accuracy_min": 0.50,
