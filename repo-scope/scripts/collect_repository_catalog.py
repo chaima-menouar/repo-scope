@@ -21,6 +21,7 @@ FIELDS = [
     "created_at", "updated_at", "pushed_at", "default_branch", "license", "topics",
 ]
 CHECKPOINT_EVERY = 1_000
+STATE_SCHEME = 2
 
 
 def _headers() -> dict[str, str]:
@@ -32,11 +33,12 @@ def _headers() -> dict[str, str]:
 
 
 def _partitions() -> list[tuple[bool, str, str, int]]:
+    """Interleave languages and popularity bands so each bounded run stays diverse."""
     active: list[tuple[bool, str, str, int]] = []
     archived: list[tuple[bool, str, str, int]] = []
     for year in reversed(YEARS):
-        for language in LANGUAGES:
-            for stars in STAR_BUCKETS:
+        for stars in STAR_BUCKETS:
+            for language in LANGUAGES:
                 active.append((False, language, stars, year))
                 archived.append((True, language, stars, year))
     mixed: list[tuple[bool, str, str, int]] = []
@@ -64,6 +66,8 @@ def _load_state(path: Path) -> tuple[int, int]:
         return 0, 1
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
+        if int(payload.get("scheme", 0)) != STATE_SCHEME:
+            return 0, 1
         partition_index = max(0, int(payload.get("partition_index", 0)))
         page = max(1, min(10, int(payload.get("page", 1))))
         return partition_index, page
@@ -89,7 +93,10 @@ def _write_checkpoint(
     temporary.replace(output)
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_text(
-        json.dumps({"partition_index": partition_index, "page": page}, indent=2) + "\n",
+        json.dumps(
+            {"scheme": STATE_SCHEME, "partition_index": partition_index, "page": page},
+            indent=2,
+        ) + "\n",
         encoding="utf-8",
     )
 
@@ -147,7 +154,6 @@ def collect(target: int, output: Path, state_path: Path, max_new: int) -> dict[s
 
     while partition_index < len(partitions) and len(rows) < target and added < max_new:
         archived, language, stars, year = partitions[partition_index]
-        # GitHub repository search excludes forks by default, so no fork:false qualifier is needed.
         query = (
             f"language:{language} stars:{stars} archived:{str(archived).lower()} "
             f"created:{year}-01-01..{year}-12-31"
@@ -181,8 +187,6 @@ def collect(target: int, output: Path, state_path: Path, max_new: int) -> dict[s
                         hit_batch_limit = True
                         break
             if hit_batch_limit:
-                # Resume this same page next time. Existing repository identities are deduplicated,
-                # so already-processed items are harmless and the remainder is not skipped.
                 _write_checkpoint(
                     rows=rows,
                     output=output,
