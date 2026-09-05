@@ -15,12 +15,26 @@ def _fmt(value, default="n/a") -> str:
     return default if value is None else str(value)
 
 
+def _matrix_lines(section: dict) -> str:
+    labels = section.get("labels") or []
+    matrix = section.get("confusion_matrix") or []
+    if not labels or not matrix:
+        return "Not available."
+    header = "| actual \\ predicted | " + " | ".join(labels) + " |"
+    divider = "| --- | " + " | ".join("---:" for _ in labels) + " |"
+    rows = []
+    for label, values in zip(labels, matrix, strict=False):
+        rows.append("| " + label + " | " + " | ".join(str(value) for value in values) + " |")
+    return "\n".join([header, divider, *rows])
+
+
 def build_model_card(progress_path: Path, quality_path: Path, metrics_path: Path) -> str:
     progress = _json(progress_path)
     quality = _json(quality_path)
     metrics = _json(metrics_path)
     training_quality = quality.get("training", {})
     cv = metrics.get("cross_validation", {})
+    heldout = metrics.get("heldout", {})
 
     warning = metrics.get("evaluation_warning") or "No automated evaluation warning was emitted."
     quality_warnings = quality.get("warnings") or []
@@ -72,9 +86,21 @@ Weak labels are based on independent GitHub maintenance evidence. RepoScope's de
 - Cross-validation strategy: {_fmt(cv.get('strategy'))}
 - Cross-validation folds: {_fmt(cv.get('folds'))}
 - Cross-validation accuracy: {_fmt(cv.get('accuracy'))}
+- Cross-validation balanced accuracy: {_fmt(cv.get('balanced_accuracy'))}
 - Cross-validation macro F1: {_fmt(cv.get('macro_f1'))}
 - Grouped holdout train repositories: {_fmt(metrics.get('train_repositories'))}
 - Grouped holdout test repositories: {_fmt(metrics.get('test_repositories'))}
+- Holdout accuracy: {_fmt(heldout.get('accuracy'))}
+- Holdout balanced accuracy: {_fmt(heldout.get('balanced_accuracy'))}
+- Holdout macro F1: {_fmt(heldout.get('macro_f1'))}
+
+### Cross-validation confusion matrix
+
+{_matrix_lines(cv)}
+
+### Grouped holdout confusion matrix
+
+{_matrix_lines(heldout)}
 
 ### Automated evaluation warning
 
