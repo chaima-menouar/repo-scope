@@ -4,14 +4,6 @@
   "blocking_reasons": [
     "fewer than 1000 deep repository snapshots collected",
     "class watch has fewer than 50 labelled repositories",
-    "class risky has fewer than 50 labelled repositories",
-    "grouped cross-validation macro F1 is below 0.65",
-    "grouped cross-validation balanced accuracy is below 0.65",
-    "temporal holdout macro F1 is below 0.60",
-    "temporal holdout does not contain all three risk classes",
-    "out-of-fold calibration diagnostics are missing",
-    "expected calibration error is above 0.15",
-    "failure-slice diagnostics are incomplete: language, maintenance_style, repository_size",
     "human-reviewed validation subset is still too small"
   ],
   "policy": {
