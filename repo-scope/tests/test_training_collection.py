@@ -26,7 +26,7 @@ def test_deep_collection_checkpoints_and_resumes_without_duplicates(tmp_path, mo
     repositories = ["org/a", "org/b", "org/c"]
     calls: list[str] = []
 
-    def fake_collect(repo: str) -> dict:
+    def fake_collect(repo: str, catalog_row=None) -> dict:
         calls.append(repo)
         return _row(repo)
 
@@ -59,3 +59,26 @@ def test_deep_collection_checkpoints_and_resumes_without_duplicates(tmp_path, mo
     assert failures == []
     assert calls == ["org/c"]
     assert set(collector.load_existing(output)) == set(repositories)
+
+
+def test_collection_passes_catalog_metadata_to_worker(tmp_path, monkeypatch):
+    output = tmp_path / "deep.csv"
+    seen = []
+
+    def fake_collect(repo: str, catalog_row=None) -> dict:
+        seen.append((repo, catalog_row))
+        return _row(repo)
+
+    monkeypatch.setattr(collector, "_collect_one", fake_collect)
+    catalog_rows = {"org/a": {"repo": "org/a", "archived": "1", "default_branch": "main"}}
+
+    total, failures, _ = collector.collect(
+        ["org/a"],
+        output,
+        workers=1,
+        catalog_rows=catalog_rows,
+    )
+
+    assert total == 1
+    assert failures == []
+    assert seen == [("org/a", catalog_rows["org/a"])]
