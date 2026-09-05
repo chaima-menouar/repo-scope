@@ -1,8 +1,4 @@
-"""Optional supervised training pipeline for repository risk classification.
-
-This module deliberately does not ship a fake pretrained model. Train it only after
-collecting and labelling real repository snapshots. Install with ``pip install -e .[ml]``.
-"""
+"""Supervised training pipeline for RepoScope's experimental repository-risk model."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -27,7 +23,7 @@ def _validate_training_frame(frame) -> None:
     if frame.empty:
         raise ValueError("Training data is empty.")
     if frame["label"].isna().any() or frame["label"].astype(str).str.strip().eq("").any():
-        raise ValueError("Every training row must have a non-empty human-assigned label.")
+        raise ValueError("Every training row must have a non-empty evidence-backed or human-reviewed label.")
     if frame["repo"].isna().any() or frame["repo"].astype(str).str.strip().eq("").any():
         raise ValueError("Every training row must identify its repository in the 'repo' column.")
     if frame["label"].nunique() < 2:
@@ -86,6 +82,9 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
             reverse=True,
         )
     }
+    label_sources = []
+    if "label_source" in frame.columns:
+        label_sources = sorted(frame["label_source"].dropna().astype(str).unique().tolist())
 
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -94,25 +93,28 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         "features": FEATURE_COLUMNS,
         "classes": [str(value) for value in model.classes_],
         "training_metadata": {
-            "rows": int(len(frame)),
+            "rows": len(frame),
             "repositories": int(groups.nunique()),
             "train_repositories": len(train_repos),
             "test_repositories": len(test_repos),
             "split_strategy": "group_shuffle_by_repository",
             "random_state": 42,
+            "label_sources": label_sources,
+            "model_status": "experimental_weak_supervision" if label_sources else "supervised",
         },
     }
     joblib.dump(artifact, target)
 
     return {
         "model_path": str(target),
-        "rows": int(len(frame)),
+        "rows": len(frame),
         "repositories": int(groups.nunique()),
-        "train_rows": int(len(train_idx)),
-        "test_rows": int(len(test_idx)),
+        "train_rows": len(train_idx),
+        "test_rows": len(test_idx),
         "train_repositories": len(train_repos),
         "test_repositories": len(test_repos),
         "classes": artifact["classes"],
+        "label_sources": label_sources,
         "feature_importance": feature_importance,
         "report": report,
     }
