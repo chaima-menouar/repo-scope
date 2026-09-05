@@ -1,6 +1,7 @@
 """GitHub REST API client with pagination, caching, and rate-limit awareness."""
 from __future__ import annotations
 
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -11,6 +12,7 @@ from repo_scope.config import (
     GITHUB_API_BASE,
     GITHUB_API_VERSION,
     GITHUB_MAX_PAGES,
+    GITHUB_RATE_LIMIT_WAIT_MAX_SECONDS,
     GITHUB_TOKEN,
     REQUEST_TIMEOUT_SECONDS,
 )
@@ -60,16 +62,57 @@ def _friendly_error(response: requests.Response) -> str:
     return f"GitHub API returned {response.status_code}: {detail}"
 
 
+def _rate_limit_wait_seconds(response: requests.Response) -> int | None:
+    """Return a bounded retry delay for explicit GitHub throttling responses."""
+    if response.status_code not in {403, 429}:
+        return None
+
+    retry_after = response.headers.get("retry-after")
+    if retry_after:
+        try:
+            return max(1, int(float(retry_after)))
+        except (TypeError, ValueError):
+            return None
+
+    remaining = response.headers.get("x-ratelimit-remaining")
+    reset = response.headers.get("x-ratelimit-reset")
+    if remaining != "0" or not reset:
+        return None
+    try:
+        return max(1, int(reset) - int(time.time()) + 5)
+    except (TypeError, ValueError, OSError):
+        return None
+
+
 def _request(path_or_url: str, params: dict[str, Any] | None = None) -> requests.Response:
     url = path_or_url if path_or_url.startswith("http") else f"{GITHUB_API_BASE}{path_or_url}"
-    try:
-        response = requests.get(url, headers=_headers(), params=params, timeout=REQUEST_TIMEOUT_SECONDS)
-    except requests.RequestException as exc:
-        raise GitHubAPIError(f"Unable to reach GitHub: {exc}") from exc
 
-    if response.status_code >= 400:
+    for attempt in range(2):
+        try:
+            response = requests.get(url, headers=_headers(), params=params, timeout=REQUEST_TIMEOUT_SECONDS)
+        except requests.RequestException as exc:
+            raise GitHubAPIError(f"Unable to reach GitHub: {exc}") from exc
+
+        if response.status_code < 400:
+            return response
+
+        wait_seconds = _rate_limit_wait_seconds(response)
+        if (
+            attempt == 0
+            and wait_seconds is not None
+            and GITHUB_RATE_LIMIT_WAIT_MAX_SECONDS > 0
+            and wait_seconds <= GITHUB_RATE_LIMIT_WAIT_MAX_SECONDS
+        ):
+            print(
+                f"GitHub rate limit reached; waiting {wait_seconds}s before retrying {url}",
+                flush=True,
+            )
+            time.sleep(wait_seconds)
+            continue
+
         raise GitHubAPIError(_friendly_error(response), response.status_code)
-    return response
+
+    raise GitHubAPIError("GitHub request failed after a bounded rate-limit retry.")
 
 
 def _cached_json(key: str, fetcher, *, use_cache: bool = True, ttl: int = CACHE_TTL_SECONDS):
