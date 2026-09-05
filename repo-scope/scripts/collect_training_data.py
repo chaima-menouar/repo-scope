@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -37,28 +38,40 @@ def _release_evidence(owner: str, repo: str) -> tuple[int | None, str]:
         return None, released_at
 
 
-def collect(repositories: list[str], output: Path) -> tuple[int, list[tuple[str, str]]]:
-    rows: list[dict] = []
+def _collect_one(repo: str) -> dict:
+    profile = RepoProfile(repo)
+    release_age, released_at = _release_evidence(profile.owner, profile.repo)
+    return {
+        "repo": repo,
+        **feature_row(profile.stats),
+        "archived": int(bool(profile.raw["repo_info"].get("archived"))),
+        "latest_release_age_days": "" if release_age is None else release_age,
+        "latest_release_at": released_at,
+        "label": "",
+    }
+
+
+def collect(
+    repositories: list[str],
+    output: Path,
+    *,
+    workers: int = 4,
+) -> tuple[int, list[tuple[str, str]]]:
+    rows_by_repo: dict[str, dict] = {}
     failures: list[tuple[str, str]] = []
 
-    for repo in repositories:
-        try:
-            profile = RepoProfile(repo)
-            release_age, released_at = _release_evidence(profile.owner, profile.repo)
-            row = {
-                "repo": repo,
-                **feature_row(profile.stats),
-                "archived": int(bool(profile.raw["repo_info"].get("archived"))),
-                "latest_release_age_days": "" if release_age is None else release_age,
-                "latest_release_at": released_at,
-                "label": "",
-            }
-            rows.append(row)
-            print(f"collected {repo}")
-        except Exception as exc:  # keep a long batch useful even if one repository fails
-            failures.append((repo, str(exc)))
-            print(f"failed {repo}: {exc}")
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as executor:
+        futures = {executor.submit(_collect_one, repo): repo for repo in repositories}
+        for future in as_completed(futures):
+            repo = futures[future]
+            try:
+                rows_by_repo[repo] = future.result()
+                print(f"collected {repo}", flush=True)
+            except Exception as exc:  # keep a long batch useful even if one repository fails
+                failures.append((repo, str(exc)))
+                print(f"failed {repo}: {exc}", flush=True)
 
+    rows = [rows_by_repo[repo] for repo in repositories if repo in rows_by_repo]
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=["repo", *FEATURE_COLUMNS, *EVIDENCE_COLUMNS, "label"])
@@ -72,12 +85,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Collect RepoScope ML feature snapshots from public repositories.")
     parser.add_argument("--repos", default="data/seed_repositories.txt")
     parser.add_argument("--output", default="data/repo_risk_unlabelled.csv")
+    parser.add_argument("--workers", type=int, default=4, help="Concurrent repository workers (default: 4).")
     args = parser.parse_args()
 
     repos_path = Path(args.repos)
     output_path = Path(args.output)
     repositories = load_repositories(repos_path)
-    collected, failures = collect(repositories, output_path)
+    collected, failures = collect(repositories, output_path, workers=args.workers)
 
     print(f"wrote {collected} rows to {output_path}")
     if failures:
