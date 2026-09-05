@@ -19,6 +19,7 @@ FEATURE_COLUMNS = [
 ]
 EXPECTED_LABELS = {"healthy", "watch", "risky"}
 LABEL_ORDER = ["healthy", "watch", "risky"]
+PROBABILITY_LABEL_ORDER = sorted(EXPECTED_LABELS)
 
 
 def _validate_training_frame(frame) -> None:
@@ -91,13 +92,72 @@ def _evaluation_payload(y_true, predictions) -> dict:
     }
 
 
-def _temporal_holdout(frame, x, y, groups) -> dict:
-    """Evaluate on the newest repository snapshots when timestamps are available.
+def _calibration_payload(y_true, probabilities, labels: list[str]) -> dict:
+    """Measure out-of-fold probability calibration without claiming production calibration."""
+    from sklearn.metrics import log_loss
 
-    Repository identity is kept entirely on one side of the split. The split is
-    intentionally chronological rather than stratified, because the purpose is
-    to expose time-shift risk rather than manufacture balanced test data.
-    """
+    y_values = [str(value) for value in y_true]
+    confidences: list[float] = []
+    predicted_labels: list[str] = []
+    squared_error = 0.0
+
+    for truth, row in zip(y_values, probabilities, strict=True):
+        values = [float(value) for value in row]
+        best_index = max(range(len(values)), key=values.__getitem__)
+        confidences.append(values[best_index])
+        predicted_labels.append(labels[best_index])
+        for index, label in enumerate(labels):
+            target = 1.0 if truth == label else 0.0
+            squared_error += (values[index] - target) ** 2
+
+    sample_count = max(1, len(y_values))
+    multiclass_brier = squared_error / sample_count
+    bins = []
+    ece = 0.0
+    for bin_index in range(10):
+        lower = bin_index / 10
+        upper = (bin_index + 1) / 10
+        member_indexes = [
+            index
+            for index, confidence in enumerate(confidences)
+            if (confidence >= lower and (confidence < upper or (bin_index == 9 and confidence <= upper)))
+        ]
+        if not member_indexes:
+            continue
+        mean_confidence = sum(confidences[index] for index in member_indexes) / len(member_indexes)
+        accuracy = sum(
+            1 for index in member_indexes if predicted_labels[index] == y_values[index]
+        ) / len(member_indexes)
+        weight = len(member_indexes) / sample_count
+        ece += weight * abs(accuracy - mean_confidence)
+        bins.append(
+            {
+                "lower": round(lower, 2),
+                "upper": round(upper, 2),
+                "count": len(member_indexes),
+                "accuracy": round(accuracy, 6),
+                "mean_confidence": round(mean_confidence, 6),
+            }
+        )
+
+    return {
+        "status": "analysis_only_uncalibrated",
+        "source": "repository-grouped out-of-fold probabilities",
+        "labels": labels,
+        "log_loss": round(float(log_loss(y_values, probabilities, labels=labels)), 6),
+        "multiclass_brier_score": round(float(multiclass_brier), 6),
+        "expected_calibration_error_10_bin": round(float(ece), 6),
+        "mean_confidence": round(sum(confidences) / sample_count, 6),
+        "bins": bins,
+        "note": (
+            "These diagnostics measure probability reliability on weak/human-combined labels. "
+            "They do not make the model production-calibrated; human-reviewed validation is still required."
+        ),
+    }
+
+
+def _temporal_holdout(frame, x, y, groups) -> dict:
+    """Evaluate on the newest repository snapshots when timestamps are available."""
     try:
         import pandas as pd
     except ImportError as exc:
@@ -177,7 +237,6 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         import joblib
         import pandas as pd
         import sklearn
-        from sklearn.metrics import accuracy_score, balanced_accuracy_score, classification_report, confusion_matrix, f1_score
         from sklearn.model_selection import GroupShuffleSplit, StratifiedGroupKFold, cross_val_predict
     except ImportError as exc:
         raise RuntimeError("Install ML dependencies with: pip install -e .[ml]") from exc
@@ -200,27 +259,38 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         raise ValueError("Each class needs at least two repositories for grouped cross-validation.")
 
     cv = StratifiedGroupKFold(n_splits=cv_folds, shuffle=True, random_state=42)
-    cv_predictions = cross_val_predict(_model(), x, y, groups=groups, cv=cv, n_jobs=-1)
-    cv_report = classification_report(y, cv_predictions, labels=LABEL_ORDER, output_dict=True, zero_division=0)
-    cv_accuracy = float(accuracy_score(y, cv_predictions))
-    cv_balanced_accuracy = float(balanced_accuracy_score(y, cv_predictions))
-    cv_macro_f1 = float(f1_score(y, cv_predictions, labels=LABEL_ORDER, average="macro", zero_division=0))
-    cv_confusion_matrix = confusion_matrix(y, cv_predictions, labels=LABEL_ORDER).tolist()
+    cv_probabilities = cross_val_predict(
+        _model(), x, y, groups=groups, cv=cv, n_jobs=-1, method="predict_proba"
+    )
+    cv_predictions = [
+        PROBABILITY_LABEL_ORDER[max(range(len(row)), key=lambda index: float(row[index]))]
+        for row in cv_probabilities
+    ]
+    cv_metrics = _evaluation_payload(y, cv_predictions)
+    cv_metrics.update(
+        {
+            "strategy": "stratified_group_k_fold",
+            "folds": cv_folds,
+        }
+    )
+    calibration = _calibration_payload(y, cv_probabilities, PROBABILITY_LABEL_ORDER)
 
     warning_reasons = []
     if len(frame) < 100:
         warning_reasons.append("fewer than 100 labelled repository snapshots")
     if min_class_count < 20:
         warning_reasons.append("at least one class has fewer than 20 repositories")
-    if cv_accuracy >= 0.99:
+    if cv_metrics["accuracy"] >= 0.99:
         warning_reasons.append("cross-validation accuracy is unusually high for a small weakly-labelled dataset")
-    if cv_balanced_accuracy < 0.60:
+    if cv_metrics["balanced_accuracy"] < 0.60:
         warning_reasons.append("balanced accuracy is below 0.60, indicating weak minority-class performance")
+    if calibration["expected_calibration_error_10_bin"] > 0.15:
+        warning_reasons.append("out-of-fold expected calibration error is above 0.15")
     evaluation_warning = None
     if warning_reasons:
         evaluation_warning = (
-            "Small weakly-labelled dataset; metrics may be optimistic and must not be treated as production "
-            "performance. Signals: " + "; ".join(warning_reasons) + "."
+            "Experimental weakly-labelled dataset; metrics must not be treated as production performance. "
+            "Signals: " + "; ".join(warning_reasons) + "."
         )
 
     splitter = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=42)
@@ -244,8 +314,6 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
     heldout = _evaluation_payload(y_test, heldout_predictions)
     temporal_holdout = _temporal_holdout(frame, x, y, groups)
 
-    # Evaluation uses isolated splits. The saved inference artifact is then
-    # refit on every labelled row so validated data is not unnecessarily lost.
     final_model = _model()
     final_model.fit(x, y)
     feature_importance = {
@@ -283,6 +351,7 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
             "cross_validation_strategy": "stratified_group_k_fold",
             "cross_validation_folds": cv_folds,
             "temporal_holdout_available": bool(temporal_holdout.get("available")),
+            "probability_status": "uncalibrated_analysis_only",
             "random_state": 42,
             "class_counts": class_counts,
             "label_sources": label_sources,
@@ -311,16 +380,8 @@ def train_from_csv(csv_path: str, output_path: str = "models/repo_risk.joblib") 
         "class_counts": class_counts,
         "label_sources": label_sources,
         "feature_importance": feature_importance,
-        "cross_validation": {
-            "strategy": "stratified_group_k_fold",
-            "folds": cv_folds,
-            "labels": LABEL_ORDER,
-            "accuracy": round(cv_accuracy, 6),
-            "balanced_accuracy": round(cv_balanced_accuracy, 6),
-            "macro_f1": round(cv_macro_f1, 6),
-            "confusion_matrix": cv_confusion_matrix,
-            "report": cv_report,
-        },
+        "cross_validation": cv_metrics,
+        "calibration": calibration,
         "heldout": heldout,
         "temporal_holdout": temporal_holdout,
         "heldout_report": heldout["report"],
