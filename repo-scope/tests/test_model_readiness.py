@@ -7,7 +7,12 @@ def _good_metrics():
     return {
         "class_counts": {"healthy": 100, "watch": 80, "risky": 70},
         "cross_validation": {"macro_f1": 0.8, "balanced_accuracy": 0.79},
-        "temporal_holdout": {"available": True, "macro_f1": 0.72, "missing_test_classes": []},
+        "temporal_holdout": {
+            "available": True,
+            "macro_f1": 0.72,
+            "missing_test_classes": [],
+            "test_class_counts": {"healthy": 30, "watch": 12, "risky": 15},
+        },
         "calibration": {"status": "analysis_only_uncalibrated", "expected_calibration_error_10_bin": 0.08},
         "failure_slices": {
             "dimensions": {
@@ -49,3 +54,18 @@ def test_readiness_blocks_large_weak_failure_slice():
     )
     assert report["eligible"] is False
     assert any("failure slice language/Python" in reason for reason in report["blocking_reasons"])
+
+
+def test_readiness_requires_meaningful_temporal_support_per_class():
+    metrics = _good_metrics()
+    metrics["temporal_holdout"]["macro_f1"] = 0.2
+    metrics["temporal_holdout"]["test_class_counts"]["watch"] = 3
+    report = evaluate(
+        {"deep_snapshots": 1500},
+        {"warnings": []},
+        metrics,
+        {"status": "ready_for_comparison", "agreement_rate": 0.82},
+    )
+    assert report["eligible"] is False
+    assert any("temporal holdout has insufficient per-class test support" in reason for reason in report["blocking_reasons"])
+    assert not any("temporal holdout macro F1 is below" in reason for reason in report["blocking_reasons"])
