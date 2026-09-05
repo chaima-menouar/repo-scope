@@ -30,8 +30,11 @@
 - [x] Define an independent human labelling rubric (`healthy`, `watch`, `risky`)
 - [x] Add durable human-label provenance and weak-label override path
 - [x] Add a blind human-review CLI that hides weak-label/model signals and requires reviewer provenance + evidence notes
+- [x] Preserve multiple independent reviewer decisions per repository without silent overwrite
+- [x] Add strict-majority adjudication that keeps ties/disagreements out of durable ground truth
 - [x] Add tests that prevent automation fields from leaking into the reviewer evidence view
-- [x] Document the human-review workflow in README, ML methodology and reviewer rubric
+- [x] Add tests for reviewer-specific pending queues and multi-reviewer adjudication
+- [x] Document the human-review workflow and raw-vs-adjudicated ground-truth boundary
 - [x] Review class balance, missingness and leakage automatically
 - [x] Train/evaluate grouped Random Forest baseline
 - [x] Benchmark Random Forest against grouped Logistic Regression baseline
@@ -52,7 +55,7 @@
 
 ### Current v0.6 status
 
-Automated ML evidence and reviewer tooling are complete for the requested collection scope. The remaining blockers are intentionally human-governed: independent repository review, production probability calibration after that validation, and an explicit promotion decision. RepoScope must not fabricate human labels or automatically promote the experimental model.
+Automated ML evidence and reviewer tooling are complete for the requested collection scope. Raw reviewer decisions are preserved separately from adjudicated ground truth. The remaining blockers are intentionally human-governed: independent repository review at sufficient scale, production probability calibration after that validation, and an explicit promotion decision. RepoScope must not fabricate human labels or automatically promote the experimental model.
 
 ## v0.7 — durable cloud analytics
 
