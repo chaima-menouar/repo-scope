@@ -10,7 +10,7 @@ from repo_scope.fetch import github_api
 from repo_scope.ml.training import FEATURE_COLUMNS, feature_row
 from repo_scope.profile import RepoProfile
 
-EVIDENCE_COLUMNS = ["archived", "latest_release_age_days", "latest_release_at"]
+EVIDENCE_COLUMNS = ["snapshot_at_utc", "archived", "latest_release_age_days", "latest_release_at"]
 FIELDNAMES = ["repo", *FEATURE_COLUMNS, *EVIDENCE_COLUMNS, "label"]
 
 
@@ -54,6 +54,7 @@ def _collect_one(repo: str) -> dict:
     return {
         "repo": repo,
         **feature_row(profile.stats),
+        "snapshot_at_utc": datetime.now(timezone.utc).isoformat(),
         "archived": int(bool(profile.raw["repo_info"].get("archived"))),
         "latest_release_age_days": "" if release_age is None else release_age,
         "latest_release_at": released_at,
