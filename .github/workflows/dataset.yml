@@ -10,6 +10,7 @@ on:
       - "repo-scope/scripts/collect_training_data.py"
       - "repo-scope/scripts/bootstrap_weak_labels.py"
       - "repo-scope/scripts/train_risk_model.py"
+      - "repo-scope/scripts/report_dataset_quality.py"
       - "repo-scope/src/repo_scope/ml/**"
       - "repo-scope/src/repo_scope/fetch/github_api.py"
       - "repo-scope/pyproject.toml"
@@ -29,7 +30,7 @@ permissions:
 jobs:
   collect-and-train:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 55
     defaults:
       run:
         working-directory: repo-scope
@@ -53,7 +54,7 @@ jobs:
             --target 100000 \
             --output data/repository_catalog_100k.csv \
             --state data/repository_catalog_100k.state.json \
-            --max-new 100000
+            --max-new 5000
 
       - name: Derive deep-analysis manifest from catalog
         run: |
@@ -88,6 +89,13 @@ jobs:
           python scripts/bootstrap_weak_labels.py \
             --input data/repo_risk_unlabelled_100k.csv \
             --output data/repo_risk_training_100k.csv
+
+      - name: Generate dataset quality report
+        run: |
+          python scripts/report_dataset_quality.py \
+            --catalog data/repository_catalog_100k.csv \
+            --training data/repo_risk_training_100k.csv \
+            --output data/repo_risk_100k_quality.json
 
       - name: Train experimental risk baseline when dataset changed
         run: |
@@ -136,6 +144,8 @@ jobs:
               'deep_snapshots': count_csv('data/repo_risk_unlabelled_100k.csv'),
               'labelled_snapshots': count_csv('data/repo_risk_training_100k.csv'),
               'label_type': 'conservative_weak_labels_with_maintenance_evidence',
+              'quality_report': 'data/repo_risk_100k_quality.json',
+              'model_status': 'experimental_weak_supervision',
           }
           Path('data/repo_risk_100k_progress.json').write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
           print(payload)
@@ -151,6 +161,7 @@ jobs:
             data/seed_repositories_100k.txt \
             data/repo_risk_unlabelled_100k.csv \
             data/repo_risk_training_100k.csv \
+            data/repo_risk_100k_quality.json \
             data/repo_risk_100k_progress.json
           if [ -f models/repo_risk_100k.joblib ]; then git add -f models/repo_risk_100k.joblib models/repo_risk_100k_metrics.json; fi
           if git diff --cached --quiet; then
