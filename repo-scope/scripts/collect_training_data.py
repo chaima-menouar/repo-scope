@@ -61,6 +61,18 @@ def _collect_one(repo: str) -> dict:
     }
 
 
+def _write_rows(output: Path, repositories: list[str], rows_by_repo: dict[str, dict]) -> int:
+    rows = [rows_by_repo[repo] for repo in repositories if repo in rows_by_repo]
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output.with_suffix(output.suffix + ".tmp")
+    with temporary.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=FIELDNAMES)
+        writer.writeheader()
+        writer.writerows(rows)
+    temporary.replace(output)
+    return len(rows)
+
+
 def collect(
     repositories: list[str],
     output: Path,
@@ -68,6 +80,7 @@ def collect(
     workers: int = 4,
     resume: bool = False,
     limit: int | None = None,
+    checkpoint_every: int = 25,
 ) -> tuple[int, list[tuple[str, str]], int]:
     rows_by_repo = load_existing(output) if resume else {}
     existing_count = len(rows_by_repo)
@@ -76,25 +89,25 @@ def collect(
         pending = pending[: max(0, limit)]
 
     failures: list[tuple[str, str]] = []
+    completed_since_checkpoint = 0
     with ThreadPoolExecutor(max_workers=max(1, workers)) as executor:
         futures = {executor.submit(_collect_one, repo): repo for repo in pending}
         for future in as_completed(futures):
             repo = futures[future]
             try:
                 rows_by_repo[repo] = future.result()
+                completed_since_checkpoint += 1
                 print(f"collected {repo}", flush=True)
+                if checkpoint_every > 0 and completed_since_checkpoint >= checkpoint_every:
+                    saved = _write_rows(output, repositories, rows_by_repo)
+                    completed_since_checkpoint = 0
+                    print(f"checkpoint saved: {saved} rows", flush=True)
             except Exception as exc:
                 failures.append((repo, str(exc)))
                 print(f"failed {repo}: {exc}", flush=True)
 
-    rows = [rows_by_repo[repo] for repo in repositories if repo in rows_by_repo]
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=FIELDNAMES)
-        writer.writeheader()
-        writer.writerows(rows)
-
-    return len(rows), failures, existing_count
+    total = _write_rows(output, repositories, rows_by_repo)
+    return total, failures, existing_count
 
 
 def main() -> None:
@@ -104,6 +117,7 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=4, help="Concurrent repository workers (default: 4).")
     parser.add_argument("--resume", action="store_true", help="Keep existing rows and collect only missing repositories.")
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of new repositories to collect this run.")
+    parser.add_argument("--checkpoint-every", type=int, default=25, help="Persist partial progress after this many successful repositories.")
     args = parser.parse_args()
 
     repositories = load_repositories(Path(args.repos))
@@ -113,6 +127,7 @@ def main() -> None:
         workers=args.workers,
         resume=args.resume,
         limit=args.limit,
+        checkpoint_every=args.checkpoint_every,
     )
 
     print(f"dataset now contains {collected} rows ({previous} existed before this run)")
