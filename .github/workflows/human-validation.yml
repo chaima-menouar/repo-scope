@@ -42,8 +42,8 @@ jobs:
           cache: pip
           cache-dependency-path: repo-scope/pyproject.toml
 
-      - name: Install project
-        run: python -m pip install -e .
+      - name: Install project and test dependencies
+        run: python -m pip install -e ".[dev]"
 
       - name: Audit independent reviewer agreement
         run: python scripts/report_reviewer_agreement.py
@@ -73,6 +73,7 @@ jobs:
           tests/test_human_review_cli.py
           tests/test_human_review_adjudication.py
           tests/test_reviewer_agreement.py
+          tests/test_model_readiness.py
 
       - name: Commit refreshed human-validation artifacts
         shell: bash
@@ -90,5 +91,6 @@ jobs:
             echo "No human-validation artifacts changed."
             exit 0
           fi
-          git commit -m "data: refresh human validation evidence"
-          git push
+          git commit -m "data: refresh human validation evidence [skip ci]"
+          git pull --rebase origin improve/portfolio-ai-cloud
+          git push origin HEAD:improve/portfolio-ai-cloud
