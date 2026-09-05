@@ -41,6 +41,7 @@ def test_manifest_preserves_active_archived_and_language_diversity(tmp_path):
     assert len(selected) == len(set(selected)) == 20
     assert sum(repo.startswith("archived/") for repo in selected) == 4
     assert sum(repo.startswith("active/") for repo in selected) == 16
+    assert sum(repo.startswith("archived/") for repo in selected[:10]) == 2
 
     by_repo = {row["repo"]: row for row in rows}
     selected_languages = {by_repo[repo]["language"] for repo in selected}
