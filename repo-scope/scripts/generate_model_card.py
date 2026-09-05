@@ -35,6 +35,8 @@ def build_model_card(progress_path: Path, quality_path: Path, metrics_path: Path
     training_quality = quality.get("training", {})
     cv = metrics.get("cross_validation", {})
     heldout = metrics.get("heldout", {})
+    temporal = metrics.get("temporal_holdout", {})
+    calibration = metrics.get("calibration", {})
 
     warning = metrics.get("evaluation_warning") or "No automated evaluation warning was emitted."
     quality_warnings = quality.get("warnings") or []
@@ -44,6 +46,17 @@ def build_model_card(progress_path: Path, quality_path: Path, metrics_path: Path
     label_lines = "\n".join(f"- `{label}`: {count}" for label, count in labels.items()) or "- Not available yet."
     sources = training_quality.get("label_sources", {})
     source_lines = "\n".join(f"- `{source}`: {count}" for source, count in sources.items()) or "- Not available yet."
+
+    temporal_text = (
+        f"- Available: yes\n"
+        f"- Strategy: {_fmt(temporal.get('strategy'))}\n"
+        f"- Cutoff UTC: {_fmt(temporal.get('cutoff_utc'))}\n"
+        f"- Balanced accuracy: {_fmt(temporal.get('balanced_accuracy'))}\n"
+        f"- Macro F1: {_fmt(temporal.get('macro_f1'))}\n"
+        f"- Missing test classes: {_fmt(temporal.get('missing_test_classes'), '[]')}"
+        if temporal.get("available")
+        else f"- Available: no\n- Reason: {_fmt(temporal.get('reason'))}"
+    )
 
     return f"""# RepoScope Risk Model Card
 
@@ -76,6 +89,8 @@ Weak labels are based on independent GitHub maintenance evidence. RepoScope's de
 ## Model and reproducibility
 
 - Model: {_fmt(metrics.get('model_type'))}
+- Feature schema: `{_fmt(metrics.get('feature_schema_version'))}`
+- Artifact fit strategy: {_fmt(metrics.get('artifact_fit_strategy'))}
 - Source CSV: `{_fmt(metrics.get('source_csv'))}`
 - Dataset SHA-256: `{_fmt(metrics.get('dataset_sha256'))}`
 - Trained at UTC: {_fmt(metrics.get('trained_at_utc'))}
@@ -94,6 +109,21 @@ Weak labels are based on independent GitHub maintenance evidence. RepoScope's de
 - Holdout balanced accuracy: {_fmt(heldout.get('balanced_accuracy'))}
 - Holdout macro F1: {_fmt(heldout.get('macro_f1'))}
 
+### Temporal holdout
+
+{temporal_text}
+
+### Probability calibration diagnostics
+
+- Status: {_fmt(calibration.get('status'))}
+- Source: {_fmt(calibration.get('source'))}
+- Log loss: {_fmt(calibration.get('log_loss'))}
+- Multiclass Brier score: {_fmt(calibration.get('multiclass_brier_score'))}
+- Expected calibration error (10 bins): {_fmt(calibration.get('expected_calibration_error_10_bin'))}
+- Mean confidence: {_fmt(calibration.get('mean_confidence'))}
+
+The probability diagnostics are measured from repository-grouped out-of-fold predictions. They are diagnostic evidence only; RepoScope does not describe the probabilities as calibrated confidence until independent human-reviewed validation supports that claim.
+
 ### Cross-validation confusion matrix
 
 {_matrix_lines(cv)}
@@ -101,6 +131,10 @@ Weak labels are based on independent GitHub maintenance evidence. RepoScope's de
 ### Grouped holdout confusion matrix
 
 {_matrix_lines(heldout)}
+
+### Temporal holdout confusion matrix
+
+{_matrix_lines(temporal) if temporal.get('available') else 'Not available.'}
 
 ### Automated evaluation warning
 
@@ -112,15 +146,15 @@ Weak labels are based on independent GitHub maintenance evidence. RepoScope's de
 
 ## Known limitations
 
-- Current training targets are weak labels, not human-reviewed ground truth.
+- Current automated training targets are dominated by weak labels until the durable human-review registry grows.
 - Archive/release evidence may encode a simpler maintenance concept than real engineering risk.
-- Probabilities are not calibrated for production decision-making.
+- Probability diagnostics do not equal production calibration.
 - GitHub API features are sampled and rate-limited rather than exhaustive history.
-- Performance must be confirmed on an independently reviewed human-labelled subset and a temporal holdout before any production promotion.
+- Performance must be confirmed on an independently reviewed human-labelled subset before any production promotion.
 
 ## Promotion requirements
 
-The model stays experimental until the project has meaningful class support, human-reviewed labels, stable repository-grouped cross-validation, a temporal holdout, calibration analysis and documented failure-case review.
+The model stays experimental until the project has meaningful class support, human-reviewed labels, stable repository-grouped cross-validation, a valid temporal holdout, acceptable calibration diagnostics and documented failure-case review. The generated readiness report remains the machine-readable gate; passing it still requires a manual promotion decision.
 
 This file is generated from RepoScope's committed progress, quality and metrics artifacts so it should not claim collection or performance numbers that those artifacts do not contain.
 """
