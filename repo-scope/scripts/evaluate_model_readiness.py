@@ -26,6 +26,7 @@ def evaluate(progress: dict, quality: dict, metrics: dict, human_comparison: dic
     cv = metrics.get("cross_validation", {})
     temporal = metrics.get("temporal_holdout", {})
     calibration = metrics.get("calibration", {})
+    failure_dimensions = (metrics.get("failure_slices", {}) or {}).get("dimensions", {}) or {}
 
     deep_snapshots = int(progress.get("deep_snapshots", 0) or 0)
     if deep_snapshots < 1000:
@@ -53,6 +54,20 @@ def evaluate(progress: dict, quality: dict, metrics: dict, human_comparison: dic
     if _number(calibration.get("expected_calibration_error_10_bin"), 1.0) > 0.15:
         reasons.append("expected calibration error is above 0.15")
 
+    required_slice_dimensions = {"language", "repository_size", "maintenance_style"}
+    missing_slice_dimensions = sorted(required_slice_dimensions - set(failure_dimensions))
+    if missing_slice_dimensions:
+        reasons.append("failure-slice diagnostics are incomplete: " + ", ".join(missing_slice_dimensions))
+    else:
+        for dimension in sorted(required_slice_dimensions):
+            for slice_row in failure_dimensions.get(dimension, []):
+                count = int(slice_row.get("count", 0) or 0)
+                accuracy = _number(slice_row.get("accuracy"), 1.0)
+                if count >= 20 and accuracy < 0.50:
+                    reasons.append(
+                        f"failure slice {dimension}/{slice_row.get('slice')} has accuracy below 0.50 with n={count}"
+                    )
+
     if human_comparison.get("status") != "ready_for_comparison":
         reasons.append("human-reviewed validation subset is still too small")
     elif _number(human_comparison.get("agreement_rate")) < 0.70:
@@ -74,6 +89,9 @@ def evaluate(progress: dict, quality: dict, metrics: dict, human_comparison: dic
             "cv_balanced_accuracy_min": 0.65,
             "temporal_macro_f1_min": 0.60,
             "ece_max": 0.15,
+            "required_failure_slice_dimensions": sorted(required_slice_dimensions),
+            "large_slice_accuracy_min": 0.50,
+            "large_slice_min_n": 20,
             "human_overlap_min": 60,
             "human_each_class_min": 10,
             "weak_human_agreement_min": 0.70,
