@@ -94,22 +94,22 @@
     }
   },
   "training": {
-    "rows": 550,
-    "unique_repositories": 550,
+    "rows": 630,
+    "unique_repositories": 630,
     "labels": {
-      "healthy": 396,
-      "risky": 105,
-      "watch": 49
+      "healthy": 450,
+      "risky": 129,
+      "watch": 51
     },
     "label_balance": {
-      "healthy": 0.72,
-      "risky": 0.1909,
-      "watch": 0.0891
+      "healthy": 0.7143,
+      "risky": 0.2048,
+      "watch": 0.081
     },
     "label_sources": {
-      "recent_release_evidence": 396,
-      "github_archived_flag": 105,
-      "stale_release_evidence": 49
+      "recent_release_evidence": 450,
+      "github_archived_flag": 129,
+      "stale_release_evidence": 51
     },
     "feature_missingness": {
       "days_since_last_commit": {

@@ -3,7 +3,7 @@
   "eligible": false,
   "blocking_reasons": [
     "class watch has fewer than 50 labelled repositories",
-    "temporal holdout macro F1 is below 0.60",
+    "temporal holdout has insufficient per-class test support (minimum 10; watch=3)",
     "human-reviewed validation subset is still too small"
   ],
   "policy": {
@@ -12,6 +12,7 @@
     "cv_macro_f1_min": 0.65,
     "cv_balanced_accuracy_min": 0.65,
     "temporal_macro_f1_min": 0.6,
+    "temporal_each_test_class_min": 10,
     "ece_max": 0.15,
     "required_failure_slice_dimensions": [
       "language",

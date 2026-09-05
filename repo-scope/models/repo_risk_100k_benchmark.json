@@ -1,22 +1,22 @@
 {
-  "rows": 550,
-  "repositories": 550,
+  "rows": 630,
+  "repositories": 630,
   "folds": 5,
   "class_counts": {
-    "healthy": 396,
-    "risky": 105,
-    "watch": 49
+    "healthy": 450,
+    "risky": 129,
+    "watch": 51
   },
   "models": {
     "logistic_regression": {
-      "accuracy": 0.772727,
-      "balanced_accuracy": 0.728382,
-      "macro_f1": 0.697733
+      "accuracy": 0.780952,
+      "balanced_accuracy": 0.721843,
+      "macro_f1": 0.689491
     },
     "random_forest": {
-      "accuracy": 0.834545,
-      "balanced_accuracy": 0.740414,
-      "macro_f1": 0.739095
+      "accuracy": 0.850794,
+      "balanced_accuracy": 0.780507,
+      "macro_f1": 0.778872
     }
   },
   "best_experimental_baseline": "random_forest",
