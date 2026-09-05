@@ -1,10 +1,15 @@
 {
   "catalog_target": 100000,
-  "catalog_repositories": 30000,
+  "catalog_repositories": 35000,
   "deep_profile_target": 10000,
-  "deep_snapshots": 705,
-  "labelled_snapshots": 338,
-  "label_type": "conservative_weak_labels_with_maintenance_evidence",
+  "deep_snapshots": 680,
+  "labelled_snapshots": 330,
+  "weak_labelled_snapshots": 330,
+  "human_reviewed_snapshots": 0,
+  "human_review_queue": 250,
+  "label_type": "weak_labels_plus_optional_durable_human_review",
   "quality_report": "data/repo_risk_100k_quality.json",
-  "model_status": "experimental_weak_supervision"
+  "human_weak_comparison": "data/repo_risk_human_weak_comparison.json",
+  "model_status": "experimental_weak_supervision",
+  "retrain_policy": "all_classes_min_20_first_model_at_200_then_each_500_label_milestone"
 }

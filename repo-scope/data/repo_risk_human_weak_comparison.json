@@ -1,0 +1,58 @@
+{
+  "status": "insufficient_human_review",
+  "weak_labelled_repositories": 330,
+  "human_reviewed_repositories": 0,
+  "overlap_repositories": 0,
+  "human_only_repositories": 0,
+  "agreement_count": 0,
+  "agreement_rate": null,
+  "labels": [
+    "healthy",
+    "watch",
+    "risky"
+  ],
+  "confusion_matrix_weak_rows_human_columns": [
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0
+    ]
+  ],
+  "agreement_by_weak_label": {
+    "healthy": {
+      "reviewed": 0,
+      "agreed": 0,
+      "agreement_rate": null
+    },
+    "watch": {
+      "reviewed": 0,
+      "agreed": 0,
+      "agreement_rate": null
+    },
+    "risky": {
+      "reviewed": 0,
+      "agreed": 0,
+      "agreement_rate": null
+    }
+  },
+  "human_class_counts": {
+    "healthy": 0,
+    "watch": 0,
+    "risky": 0
+  },
+  "minimum_requirement": {
+    "overlap_repositories": 60,
+    "human_repositories_per_class": 10
+  },
+  "note": "This report treats human review as the independent reference for measuring weak-label agreement. It does not promote the model by itself."
+}

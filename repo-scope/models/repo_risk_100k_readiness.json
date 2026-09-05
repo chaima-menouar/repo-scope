@@ -1,0 +1,37 @@
+{
+  "promotion_status": "blocked",
+  "eligible": false,
+  "blocking_reasons": [
+    "fewer than 1000 deep repository snapshots collected",
+    "class watch has fewer than 50 labelled repositories",
+    "class risky has fewer than 50 labelled repositories",
+    "grouped cross-validation macro F1 is below 0.65",
+    "grouped cross-validation balanced accuracy is below 0.65",
+    "temporal holdout macro F1 is below 0.60",
+    "temporal holdout does not contain all three risk classes",
+    "out-of-fold calibration diagnostics are missing",
+    "expected calibration error is above 0.15",
+    "failure-slice diagnostics are incomplete: language, maintenance_style, repository_size",
+    "human-reviewed validation subset is still too small",
+    "dataset quality report still contains warnings"
+  ],
+  "policy": {
+    "deep_snapshots_min": 1000,
+    "each_class_min": 50,
+    "cv_macro_f1_min": 0.65,
+    "cv_balanced_accuracy_min": 0.65,
+    "temporal_macro_f1_min": 0.6,
+    "ece_max": 0.15,
+    "required_failure_slice_dimensions": [
+      "language",
+      "maintenance_style",
+      "repository_size"
+    ],
+    "large_slice_accuracy_min": 0.5,
+    "large_slice_min_n": 20,
+    "human_overlap_min": 60,
+    "human_each_class_min": 10,
+    "weak_human_agreement_min": 0.7
+  },
+  "note": "Eligible means the automated evidence is strong enough for a manual promotion decision. It never automatically converts the experimental model into a production risk score."
+}
