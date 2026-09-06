@@ -3,121 +3,133 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="RepoScope — living repository intelligence for engineering teams." />
-  <title>RepoScope — Living Repository Intelligence</title>
+  <meta name="description" content="RepoScope — scientific repository intelligence for engineering teams." />
+  <title>RepoScope — Repository Observatory</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/styles.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script defer src="/assets/app.js"></script>
 </head>
 <body>
-  <div class="noise"></div>
-  <div class="aurora aurora-one"></div>
-  <div class="aurora aurora-two"></div>
+  <canvas id="particle-field" aria-hidden="true"></canvas>
+  <div class="spectral spectral-a"></div><div class="spectral spectral-b"></div><div class="scanline"></div>
+
   <header class="nav shell">
     <a class="brand" href="#top" aria-label="RepoScope home">
-      <span class="brand-mark"><span></span><i></i><b></b></span>
-      <span>Repo<em>Scope</em></span>
+      <span class="brand-symbol"><i></i><b></b><em></em></span>
+      <span class="brand-copy">RepoScope<small>OBSERVATORY / 01</small></span>
     </a>
-    <nav><a href="#analyzer">Analyzer</a><a href="#compare">Compare</a><a href="#architecture">System</a><a href="/docs">API</a></nav>
-    <span class="status-pill"><i></i> intelligence online</span>
+    <nav><a href="#analyzer">Analyze</a><a href="#compare">Compare</a><a href="#architecture">System</a><a href="/docs">API</a></nav>
+    <div class="nav-status"><span class="status-dot"></span><div><small>TELEMETRY</small><strong>ONLINE</strong></div></div>
   </header>
 
   <main id="top">
     <section class="hero shell">
       <div class="hero-copy-block">
-        <div class="eyebrow"><span></span> REPOSITORY INTELLIGENCE, IN MOTION</div>
-        <h1>See the codebase<br><strong>before it breaks.</strong></h1>
-        <p class="hero-copy">RepoScope turns GitHub activity into a living map of repository health — surfacing ownership fragility, stalled work, contribution shifts and engineering risk before they become expensive.</p>
+        <div class="eyebrow">REPOSITORY OBSERVATORY <span>●</span> LIVE SIGNAL</div>
+        <h1>Read the hidden<br><span>physics of code.</span></h1>
+        <p class="hero-copy">A scientific intelligence layer for GitHub repositories. RepoScope reconstructs activity, ownership, maintenance pressure and engineering risk into one living system map.</p>
+
         <form id="analyze-form" class="search-box" autocomplete="off">
-          <div class="repo-prefix">github.com /</div>
+          <div class="search-meta"><span>SCAN TARGET</span><small>github.com /</small></div>
           <input id="repo-input" name="repo" value="fastapi/fastapi" aria-label="GitHub repository" placeholder="owner/repository" />
-          <button class="primary-btn" type="submit"><span>Scan repository</span><span class="btn-arrow" aria-hidden="true">↗</span></button>
+          <button class="primary-btn" type="submit"><span>Initiate scan</span><b>↗</b></button>
         </form>
-        <div class="quick-row"><span>Quick scan</span><button data-repo="facebook/react">facebook/react</button><button data-repo="pallets/flask">pallets/flask</button><button data-repo="vuejs/core">vuejs/core</button></div>
-        <div class="hero-proof"><div><strong>01</strong><span>Health graph</span></div><div><strong>02</strong><span>Ownership risk</span></div><div><strong>03</strong><span>Issue velocity</span></div><div><strong>04</strong><span>AI diagnosis</span></div></div>
+        <div class="quick-row"><span>CALIBRATION TARGETS</span><button data-repo="facebook/react">facebook/react</button><button data-repo="pallets/flask">pallets/flask</button><button data-repo="vuejs/core">vuejs/core</button></div>
+
+        <div class="hero-proof">
+          <div><small>01</small><strong>Health field</strong><span>Explainable 0–100 system score</span></div>
+          <div><small>02</small><strong>Ownership gravity</strong><span>Bus factor + concentration risk</span></div>
+          <div><small>03</small><strong>Flow velocity</strong><span>Commits, issues and PR dynamics</span></div>
+        </div>
       </div>
 
-      <div class="repo-visual" aria-hidden="true">
-        <div class="visual-frame">
-          <div class="visual-top"><span>LIVE / REPOSITORY MAP</span><span class="signal-live"><i></i> sampling</span></div>
-          <div class="graph-stage">
-            <div class="orbit orbit-a"></div>
-            <div class="orbit orbit-b"></div>
-            <div class="orbit orbit-c"></div>
-            <div class="core-orb"><small>HEALTH</small><strong>87</strong><span>stable</span></div>
-            <div class="node node-a"><i></i><span>main</span></div>
-            <div class="node node-b"><i></i><span>api</span></div>
-            <div class="node node-c"><i></i><span>auth</span></div>
-            <div class="node node-d danger"><i></i><span>legacy</span></div>
-            <div class="node node-e"><i></i><span>tests</span></div>
-            <svg class="connections" viewBox="0 0 600 500" preserveAspectRatio="none">
-              <path d="M300 250 C205 160 165 130 94 104"/>
-              <path d="M300 250 C390 155 450 144 522 126"/>
-              <path d="M300 250 C430 290 474 330 528 382"/>
-              <path d="M300 250 C210 338 172 367 106 402"/>
-              <path d="M300 250 C300 145 302 102 302 55"/>
+      <div class="observatory" id="observatory" aria-hidden="true">
+        <div class="observatory-frame">
+          <div class="instrument-bar"><span>REPOSITORY FIELD / LIVE</span><span>Δt 90 DAYS</span><span class="live-chip"><i></i>ACQUIRING</span></div>
+          <div class="instrument-stage">
+            <div class="halo halo-1"></div><div class="halo halo-2"></div><div class="halo halo-3"></div>
+            <div class="axis axis-x"></div><div class="axis axis-y"></div>
+            <div class="nucleus"><span>HEALTH</span><strong>87</strong><small>STABLE ORBIT</small></div>
+            <div class="satellite sat-a"><i></i><span>main</span><small>98%</small></div>
+            <div class="satellite sat-b"><i></i><span>api</span><small>91%</small></div>
+            <div class="satellite sat-c warning"><i></i><span>legacy</span><small>42%</small></div>
+            <div class="satellite sat-d"><i></i><span>tests</span><small>84%</small></div>
+            <div class="satellite sat-e"><i></i><span>auth</span><small>79%</small></div>
+            <svg class="field-lines" viewBox="0 0 640 560" preserveAspectRatio="none">
+              <path d="M320 280 C210 162 166 120 86 88"/><path d="M320 280 C438 148 493 137 560 108"/><path d="M320 280 C450 330 500 388 570 444"/><path d="M320 280 C205 390 159 426 72 468"/><path d="M320 280 C322 168 324 104 325 52"/>
             </svg>
-            <div class="floating-card risk-card"><span>RISK SIGNAL</span><strong>ownership drift</strong><small>2 contributors dominate 71%</small></div>
-            <div class="floating-card velocity-card"><span>VELOCITY</span><strong>+18%</strong><small>commit activity</small></div>
+            <div class="waveform"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            <div class="readout readout-left"><small>CONTRIBUTOR DENSITY</small><strong>0.71</strong><span>concentrated</span></div>
+            <div class="readout readout-right"><small>ISSUE PRESSURE</small><strong>12.4</strong><span>falling</span></div>
+            <div class="micro-label ml-a">MODULE CLUSTER A</div><div class="micro-label ml-b">RISK VECTOR 03</div><div class="micro-label ml-c">CONFIDENCE 0.93</div>
           </div>
-          <div class="visual-footer"><span><i class="lime-dot"></i> 14 active modules</span><span>03 alerts</span><span>90d window</span></div>
+          <div class="instrument-footer"><span>14 ACTIVE MODULES</span><span>3 STRUCTURAL ALERTS</span><span>MODEL / EXPLAINABLE</span></div>
         </div>
       </div>
     </section>
 
-    <section class="ticker-wrap"><div class="ticker"><span>HEALTH GRAPH</span><b>◆</b><span>CONTRIBUTOR CONCENTRATION</span><b>◆</b><span>ISSUE FLOW</span><b>◆</b><span>BUS FACTOR</span><b>◆</b><span>AI DIAGNOSIS</span><b>◆</b><span>HEALTH GRAPH</span><b>◆</b><span>CONTRIBUTOR CONCENTRATION</span></div></section>
+    <section class="marquee"><div><span>STRUCTURAL HEALTH</span><b>✦</b><span>CONTRIBUTOR GRAVITY</span><b>✦</b><span>MAINTENANCE PRESSURE</span><b>✦</b><span>CODE FLOW</span><b>✦</b><span>RISK VECTORS</span><b>✦</b><span>STRUCTURAL HEALTH</span></div></section>
+
+    <section class="principles shell">
+      <div class="principle-lead"><small>THE SCIENCE LAYER</small><h2>Not another dashboard.<br>A system model.</h2></div>
+      <div class="principle-grid">
+        <article><span>α</span><strong>Observe</strong><p>Reconstruct recent repository behavior from real GitHub signals.</p></article>
+        <article><span>β</span><strong>Measure</strong><p>Quantify resilience, velocity, ownership concentration and hygiene.</p></article>
+        <article><span>γ</span><strong>Explain</strong><p>Translate the measurements into visible engineering risk and next actions.</p></article>
+      </div>
+    </section>
 
     <section id="analyzer" class="shell dashboard-section hidden" aria-live="polite">
-      <div id="loading" class="loading-card hidden"><div class="scanner"><span></span></div><div><strong>Mapping repository signals…</strong><span>Fetching recent GitHub activity and building the intelligence graph.</span></div></div>
+      <div id="loading" class="loading-card hidden"><div class="scanner"><i></i></div><div><strong>Scanning repository field…</strong><span>Sampling GitHub activity, ownership and maintenance signals.</span></div></div>
       <div id="error-box" class="error-box hidden"></div>
       <div id="dashboard" class="hidden">
-        <div class="section-head"><div><div class="eyebrow"><span></span> LIVE ANALYSIS</div><h2 id="repo-title">Repository</h2><p id="repo-description"></p></div><div class="section-actions"><button id="refresh-btn" class="ghost-btn">Refresh data</button><a id="github-link" class="ghost-btn" href="#" target="_blank" rel="noreferrer">Open GitHub ↗</a></div></div>
+        <div class="section-head"><div><div class="eyebrow">LIVE ANALYSIS <span>●</span></div><h2 id="repo-title">Repository</h2><p id="repo-description"></p></div><div class="section-actions"><button id="refresh-btn" class="ghost-btn">Recalibrate</button><a id="github-link" class="ghost-btn" href="#" target="_blank" rel="noreferrer">Open GitHub ↗</a></div></div>
 
         <div class="overview-grid">
-          <article class="panel health-panel"><div class="panel-label">Repository health</div><div class="score-ring" id="score-ring"><div><strong id="health-score">—</strong><small>/100</small></div></div><div id="health-label" class="health-label">—</div><p>Composite signal from activity, ownership resilience, issue/PR hygiene and engineering practices.</p></article>
-          <article class="panel metric-panel"><div class="metric-icon lime">↗</div><span>Commits / 90d</span><strong id="commits-90">—</strong><small id="last-commit">Recent sample</small></article>
-          <article class="panel metric-panel"><div class="metric-icon coral">◎</div><span>Bus factor</span><strong id="bus-factor">—</strong><small>Contributors covering 50% of sampled contributions</small></article>
-          <article class="panel metric-panel"><div class="metric-icon ivory">✓</div><span>Issue closure</span><strong id="issue-closure">—</strong><small id="issue-sample">Sampled issue hygiene</small></article>
-          <article class="panel metric-panel"><div class="metric-icon pink">⑂</div><span>PR merge rate</span><strong id="pr-merge">—</strong><small id="pr-sample">Closed pull-request sample</small></article>
+          <article class="panel health-panel"><div class="panel-label">SYSTEM HEALTH</div><div class="score-ring" id="score-ring"><div><strong id="health-score">—</strong><small>/100</small></div></div><div id="health-label" class="health-label">—</div><p>Composite field from activity, resilience, hygiene and engineering practices.</p></article>
+          <article class="panel metric-panel"><div class="metric-index">01</div><span>Commits / 90d</span><strong id="commits-90">—</strong><small id="last-commit">Recent sample</small></article>
+          <article class="panel metric-panel"><div class="metric-index">02</div><span>Bus factor</span><strong id="bus-factor">—</strong><small>Ownership resilience</small></article>
+          <article class="panel metric-panel"><div class="metric-index">03</div><span>Issue closure</span><strong id="issue-closure">—</strong><small id="issue-sample">Sampled issue hygiene</small></article>
+          <article class="panel metric-panel"><div class="metric-index">04</div><span>PR merge rate</span><strong id="pr-merge">—</strong><small id="pr-sample">Closed pull-request sample</small></article>
         </div>
 
         <div class="dashboard-grid two-col">
-          <article class="panel chart-panel"><div class="panel-head"><div><div class="panel-label">ACTIVITY TREND</div><h3>Commit velocity</h3></div><span class="mini-tag">recent sample</span></div><div class="chart-wrap"><canvas id="commits-chart"></canvas></div></article>
-          <article class="panel chart-panel"><div class="panel-head"><div><div class="panel-label">ISSUE FLOW</div><h3>Opened vs closed</h3></div><span class="mini-tag">monthly</span></div><div class="chart-wrap"><canvas id="issues-chart"></canvas></div></article>
+          <article class="panel chart-panel"><div class="panel-head"><div><div class="panel-label">TEMPORAL FIELD</div><h3>Commit velocity</h3></div><span class="mini-tag">90d sample</span></div><div class="chart-wrap"><canvas id="commits-chart"></canvas></div></article>
+          <article class="panel chart-panel"><div class="panel-head"><div><div class="panel-label">PRESSURE FLOW</div><h3>Opened vs closed</h3></div><span class="mini-tag">monthly</span></div><div class="chart-wrap"><canvas id="issues-chart"></canvas></div></article>
         </div>
 
         <div class="dashboard-grid split-strong">
-          <article class="panel"><div class="panel-head"><div><div class="panel-label">SMART DIAGNOSIS</div><h3>Engineering summary</h3></div><div class="spark">✦</div></div><p id="smart-summary" class="summary-copy"></p><div id="signals" class="signal-grid"></div><button id="ai-btn" class="ai-btn"><span>✦</span> Run AI analyst</button><div id="ai-result" class="ai-result hidden"></div></article>
-          <article class="panel"><div class="panel-head"><div><div class="panel-label">AUTOMATED ALERTS</div><h3>Risk radar</h3></div><span id="alert-count" class="mini-tag">0 alerts</span></div><div id="alerts" class="alerts"></div></article>
+          <article class="panel"><div class="panel-head"><div><div class="panel-label">SYNTHESIS ENGINE</div><h3>Engineering diagnosis</h3></div><div class="spark">✦</div></div><p id="smart-summary" class="summary-copy"></p><div id="signals" class="signal-grid"></div><button id="ai-btn" class="ai-btn"><span>✦</span> Run AI analyst</button><div id="ai-result" class="ai-result hidden"></div></article>
+          <article class="panel"><div class="panel-head"><div><div class="panel-label">ANOMALY FIELD</div><h3>Risk vectors</h3></div><span id="alert-count" class="mini-tag">0 alerts</span></div><div id="alerts" class="alerts"></div></article>
         </div>
 
         <div class="dashboard-grid two-col">
-          <article class="panel"><div class="panel-head"><div><div class="panel-label">CONTRIBUTOR STRUCTURE</div><h3>Top contributors</h3></div></div><div class="chart-wrap short"><canvas id="contributors-chart"></canvas></div></article>
-          <article class="panel"><div class="panel-head"><div><div class="panel-label">TECH STACK</div><h3>Language distribution</h3></div></div><div class="language-layout"><div class="chart-wrap donut"><canvas id="languages-chart"></canvas></div><div id="language-list" class="language-list"></div></div></article>
+          <article class="panel"><div class="panel-head"><div><div class="panel-label">HUMAN STRUCTURE</div><h3>Top contributors</h3></div></div><div class="chart-wrap short"><canvas id="contributors-chart"></canvas></div></article>
+          <article class="panel"><div class="panel-head"><div><div class="panel-label">CODE SPECTRUM</div><h3>Language distribution</h3></div></div><div class="language-layout"><div class="chart-wrap donut"><canvas id="languages-chart"></canvas></div><div id="language-list" class="language-list"></div></div></article>
         </div>
       </div>
     </section>
 
     <section id="compare" class="shell compare-section">
-      <div class="section-head compact"><div><div class="eyebrow"><span></span> REPOSITORY COMPARISON</div><h2>Put two codebases under the same lens.</h2><p>Compare health, activity, contribution resilience and maintenance signals side by side.</p></div></div>
-      <form id="compare-form" class="compare-form"><input id="repo-a" value="fastapi/fastapi" placeholder="owner/repo A"><span>versus</span><input id="repo-b" value="pallets/flask" placeholder="owner/repo B"><button class="primary-btn" type="submit">Compare</button></form>
-      <div id="compare-loading" class="mini-loading hidden">Building comparison…</div><div id="compare-result" class="compare-result hidden"></div>
+      <div class="section-head compact"><div><div class="eyebrow">CONTROL EXPERIMENT <span>●</span></div><h2>Place two codebases in the same field.</h2><p>Benchmark resilience, activity and maintenance pressure side by side.</p></div></div>
+      <form id="compare-form" class="compare-form"><input id="repo-a" value="fastapi/fastapi" placeholder="owner/repo A"><span>VERSUS</span><input id="repo-b" value="pallets/flask" placeholder="owner/repo B"><button class="primary-btn" type="submit">Compare</button></form>
+      <div id="compare-loading" class="mini-loading hidden">Building comparison field…</div><div id="compare-result" class="compare-result hidden"></div>
     </section>
 
     <section id="architecture" class="shell architecture-section">
-      <div class="eyebrow"><span></span> SYSTEM MAP</div><h2>From raw activity to engineering intelligence.</h2>
+      <div class="eyebrow">SYSTEM ARCHITECTURE <span>●</span></div><h2>Four layers. One observatory.</h2>
       <div class="architecture-grid">
-        <article><span>01</span><div class="arch-orb"></div><strong>GitHub ingestion</strong><p>REST API, pagination, authentication, rate-limit handling and a TTL cache.</p></article>
-        <article><span>02</span><div class="arch-orb"></div><strong>Analytics engine</strong><p>Activity, issue/PR hygiene, contributor concentration, health score and alerts.</p></article>
-        <article><span>03</span><div class="arch-orb"></div><strong>AI diagnosis</strong><p>LLM insight endpoint with a supervised risk-model training path for labelled snapshots.</p></article>
-        <article><span>04</span><div class="arch-orb"></div><strong>Cloud delivery</strong><p>FastAPI + Docker with CI and multi-platform deployment support.</p></article>
+        <article><span>01</span><div class="arch-visual"></div><strong>Signal ingestion</strong><p>GitHub REST API, pagination, authentication, rate-limit handling and TTL caching.</p></article>
+        <article><span>02</span><div class="arch-visual"></div><strong>Measurement engine</strong><p>Activity, issue/PR hygiene, contributor concentration and health scoring.</p></article>
+        <article><span>03</span><div class="arch-visual"></div><strong>Inference layer</strong><p>Explainable alerts, smart diagnosis and an optional LLM analyst.</p></article>
+        <article><span>04</span><div class="arch-visual"></div><strong>Cloud observatory</strong><p>FastAPI + Docker with CI and multi-platform deployment support.</p></article>
       </div>
     </section>
   </main>
 
-  <footer class="shell footer"><div class="brand"><span class="brand-mark"><span></span><i></i><b></b></span><span>Repo<em>Scope</em></span></div><p>Repository intelligence designed to reveal structural risk before it becomes visible.</p></footer>
+  <footer class="shell footer"><div class="brand"><span class="brand-symbol"><i></i><b></b><em></em></span><span class="brand-copy">RepoScope<small>ENGINEERING INTELLIGENCE</small></span></div><p>Designed to reveal structural repository risk before it becomes visible.</p></footer>
 </body>
 </html>
