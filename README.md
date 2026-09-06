@@ -1,101 +1,50 @@
+<div align="center">
+
 # RepoScope
 
-**Repository intelligence for GitHub engineering teams.** RepoScope turns recent GitHub activity into an explainable repository health profile: activity, contributor concentration, issue and pull-request hygiene, engineering-practice signals, alerts, trends, comparisons, and optional AI-assisted recommendations.
+### Explainable repository intelligence for GitHub engineering teams
+
+**Health scoring · contributor concentration · issue/PR hygiene · trends · comparisons · optional AI analysis**
+
+![FastAPI](https://img.shields.io/badge/FastAPI-Web%20%2B%20API-009688?logo=fastapi&logoColor=white)
+![GitHub](https://img.shields.io/badge/GitHub-REST%20API-181717?logo=github&logoColor=white)
+![CLI](https://img.shields.io/badge/CLI-repo--scope-2563EB)
+![AI](https://img.shields.io/badge/AI-Optional%20Analyst-7C3AED)
+
+</div>
+
+RepoScope transforms recent GitHub activity into an **explainable repository health profile** covering activity, contributor concentration, issue and pull-request hygiene, engineering-practice signals, alerts, trends and comparisons.
+
+The analytics layer is deterministic; optional AI interpretation sits on top of already-computed evidence.
 
 ## Architecture
 
-![RepoScope architecture](docs/architecture.svg)
+![RepoScope architecture](docs/architecture-modern.svg)
 
-The application separates GitHub data collection from deterministic analytics and optional language-model interpretation. Repository scores and operational signals are computed before any LLM-generated explanation is produced.
+## What RepoScope measures
 
-## Core capabilities
+- explainable 0–100 repository health score;
+- contributor concentration and bus-factor risk;
+- issue and pull-request hygiene;
+- CI, tests, README, license, contributing and security-policy signals;
+- monthly activity trends;
+- alerts and comparison views;
+- standalone HTML and JSON reports;
+- CLI analysis via `repo-scope owner/repo`;
+- optional AI-assisted recommendations with deterministic fallback.
 
-- FastAPI web application and REST API
-- responsive engineering dashboard
-- GitHub REST API client with authentication, pagination, caching, and rate-limit handling
-- explainable 0–100 repository health score
-- contributor-concentration and bus-factor analysis
-- issue and pull-request hygiene metrics
-- CI, tests, README, license, contributing, and security-policy detection
-- monthly activity time series
-- repository comparison
-- standalone HTML and JSON reports
-- CLI package (`repo-scope owner/repo`)
-- optional OpenAI-powered analyst with a deterministic fallback
-- supervised ML training path for a future repository-risk classifier
-- Pytest and Ruff CI
-- Docker, Vercel, and Render deployment readiness
+## Engineering design
 
-## Repository layout
+| Layer | Responsibility |
+|---|---|
+| GitHub client | Authentication, pagination, caching and rate-limit handling |
+| Collection | Recent repository activity and engineering signals |
+| Analytics | Health score, bus factor, hygiene, trends and alerts |
+| Web/API | FastAPI dashboard, analysis and comparison endpoints |
+| Reports/CLI | HTML, JSON and command-line output |
+| AI analyst | Optional explanation of already-computed evidence |
 
-The deployable application currently lives under the `repo-scope/` directory:
-
-```text
-.
-├── README.md
-├── docs/architecture.svg
-└── repo-scope/
-    ├── app.py
-    ├── public/
-    ├── src/repo_scope/
-    │   ├── web.py
-    │   ├── profile.py
-    │   ├── fetch/
-    │   ├── analysis/
-    │   ├── report/
-    │   ├── ml/
-    │   └── insights.py
-    ├── scripts/
-    ├── tests/
-    ├── docs/
-    ├── Dockerfile
-    └── pyproject.toml
-```
-
-## Local run
-
-Requires Python 3.12+.
-
-```bash
-cd repo-scope
-python -m venv .venv
-```
-
-Activate the environment, then install the package and development dependencies:
-
-```bash
-pip install -e ".[dev]"
-```
-
-Copy the environment template and configure local values:
-
-```bash
-cp .env.example .env
-```
-
-Run the application:
-
-```bash
-uvicorn app:app --reload
-```
-
-Open `http://127.0.0.1:8000` and API documentation at `http://127.0.0.1:8000/docs`.
-
-## Environment variables
-
-`GITHUB_TOKEN` is strongly recommended because unauthenticated public GitHub requests have a much smaller rate limit. `OPENAI_API_KEY` is optional; without it RepoScope keeps the insight panel usable through its deterministic local summary.
-
-```env
-GITHUB_TOKEN=github_pat_...
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-5.6-luna
-CACHE_TTL_SECONDS=3600
-GITHUB_MAX_PAGES=3
-```
-
-Never commit `.env` or access tokens.
-
-## REST API
+## API
 
 ```text
 GET  /api/health
@@ -111,9 +60,59 @@ repo-scope fastapi/fastapi --html reports/fastapi.html --json reports/fastapi.js
 repo-scope facebook/react --stdout
 ```
 
-## ML training path
+## Local run
 
-RepoScope does not present an untrained model as a finished risk classifier. The repository includes a training workflow that should only be used after collecting and human-labelling repository snapshots.
+Requires Python 3.12+.
+
+```bash
+cd repo-scope
+python -m venv .venv
+pip install -e ".[dev]"
+cp .env.example .env
+uvicorn app:app --reload
+```
+
+Open `http://127.0.0.1:8000` and API docs at `http://127.0.0.1:8000/docs`.
+
+Recommended environment values:
+
+```env
+GITHUB_TOKEN=github_pat_...
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-5.6-luna
+CACHE_TTL_SECONDS=3600
+GITHUB_MAX_PAGES=3
+```
+
+`GITHUB_TOKEN` is strongly recommended for better rate limits. `OPENAI_API_KEY` is optional; without it the insight panel remains usable through deterministic summaries.
+
+## Repository structure
+
+```text
+.
+├── README.md
+├── docs/
+│   └── architecture-modern.svg
+└── repo-scope/
+    ├── app.py
+    ├── public/
+    ├── src/repo_scope/
+    │   ├── web.py
+    │   ├── profile.py
+    │   ├── fetch/
+    │   ├── analysis/
+    │   ├── report/
+    │   ├── ml/
+    │   └── insights.py
+    ├── scripts/
+    ├── tests/
+    ├── Dockerfile
+    └── pyproject.toml
+```
+
+## ML path
+
+RepoScope does **not** present an untrained classifier as a finished risk model. The repository includes a training path that should only be used after collecting and human-labelling repository snapshots.
 
 ```bash
 pip install -e ".[ml]"
@@ -123,11 +122,11 @@ python scripts/train_risk_model.py data/repo_risk_training.csv
 
 ## Deployment
 
-The inner application includes deployment configuration for Docker, Vercel, and Render. The same Docker image can also be adapted to an AWS container runtime.
+The application includes Docker, Vercel and Render deployment configuration. The same container boundary can be adapted to an AWS runtime.
 
 ## Interpretation limits
 
-RepoScope deliberately caps paginated GitHub collection to keep interactive analysis responsive and respectful of API rate limits. Metrics should therefore be interpreted as **recent sampled engineering signals**, not as a claim that the system has exhaustively downloaded a repository's full history.
+Collection is deliberately capped to keep interactive analysis responsive and respectful of GitHub API limits. Metrics represent **recent sampled engineering signals**, not an exhaustive download of full repository history.
 
 ## Author
 
