@@ -30,21 +30,23 @@ function renderAlerts(alerts){
 }
 
 function chartDefaults(){
-  Chart.defaults.color='#71819a'; Chart.defaults.borderColor='rgba(130,149,178,.09)'; Chart.defaults.font.family='Inter';
+  Chart.defaults.color='#9f90a3';
+  Chart.defaults.borderColor='rgba(255,246,223,.08)';
+  Chart.defaults.font.family='Manrope';
 }
 function renderCharts(data){
   chartDefaults();
   const commits=(data.timeseries.commits||[]).slice(-12); destroyChart('commits');
-  charts.commits=new Chart($('#commits-chart'),{type:'line',data:{labels:commits.map(x=>x.date),datasets:[{data:commits.map(x=>x.count),borderColor:'#36d7ff',backgroundColor:'rgba(54,215,255,.08)',fill:true,tension:.38,pointRadius:2,pointBackgroundColor:'#36d7ff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}}}});
+  charts.commits=new Chart($('#commits-chart'),{type:'line',data:{labels:commits.map(x=>x.date),datasets:[{data:commits.map(x=>x.count),borderColor:'#d9ff62',backgroundColor:'rgba(217,255,98,.065)',fill:true,tension:.4,pointRadius:2,pointBackgroundColor:'#d9ff62'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}}}});
 
   const issues=(data.timeseries.issues||[]).slice(-12); destroyChart('issues');
-  charts.issues=new Chart($('#issues-chart'),{type:'bar',data:{labels:issues.map(x=>x.date),datasets:[{label:'Opened',data:issues.map(x=>x.opened),backgroundColor:'rgba(139,92,246,.8)',borderRadius:4},{label:'Closed',data:issues.map(x=>x.closed),backgroundColor:'rgba(52,211,153,.75)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:8,font:{size:9}}}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}}}});
+  charts.issues=new Chart($('#issues-chart'),{type:'bar',data:{labels:issues.map(x=>x.date),datasets:[{label:'Opened',data:issues.map(x=>x.opened),backgroundColor:'rgba(245,138,214,.74)',borderRadius:5},{label:'Closed',data:issues.map(x=>x.closed),backgroundColor:'rgba(217,255,98,.7)',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:8,font:{size:9}}}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}}}});
 
   const top=data.stats.contributors.top||[]; destroyChart('contributors');
-  charts.contributors=new Chart($('#contributors-chart'),{type:'bar',data:{labels:top.map(x=>x.login),datasets:[{data:top.map(x=>x.contributions),backgroundColor:top.map((_,i)=>i===0?'#36d7ff':'rgba(139,92,246,.55)'),borderRadius:5}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{size:9}}},y:{grid:{display:false},ticks:{font:{size:9}}}}}});
+  charts.contributors=new Chart($('#contributors-chart'),{type:'bar',data:{labels:top.map(x=>x.login),datasets:[{data:top.map(x=>x.contributions),backgroundColor:top.map((_,i)=>i===0?'#d9ff62':'rgba(245,138,214,.5)'),borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{size:9}}},y:{grid:{display:false},ticks:{font:{size:9}}}}}});
 
   const langs=(data.stats.languages||[]).slice(0,6); destroyChart('languages');
-  charts.languages=new Chart($('#languages-chart'),{type:'doughnut',data:{labels:langs.map(x=>x.name),datasets:[{data:langs.map(x=>x.percent),backgroundColor:['#36d7ff','#8b5cf6','#34d399','#fbbf24','#fb7185','#60a5fa'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false}}}});
+  charts.languages=new Chart($('#languages-chart'),{type:'doughnut',data:{labels:langs.map(x=>x.name),datasets:[{data:langs.map(x=>x.percent),backgroundColor:['#d9ff62','#f58ad6','#ff7a72','#fff2d4','#a379bb','#9cb95e'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false}}}});
   $('#language-list').innerHTML=langs.map(x=>`<div class="language-row"><span>${x.name}</span><div class="lang-bar"><i style="width:${x.percent}%"></i></div><b>${x.percent}%</b></div>`).join('') || '<span class="mini-tag">No language data</span>';
 }
 
