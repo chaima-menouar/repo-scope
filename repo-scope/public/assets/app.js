@@ -30,23 +30,23 @@ function renderAlerts(alerts){
 }
 
 function chartDefaults(){
-  Chart.defaults.color='#9f90a3';
-  Chart.defaults.borderColor='rgba(255,246,223,.08)';
-  Chart.defaults.font.family='Manrope';
+  Chart.defaults.color='#7f8c9d';
+  Chart.defaults.borderColor='rgba(199,209,218,.07)';
+  Chart.defaults.font.family='Inter';
 }
 function renderCharts(data){
   chartDefaults();
   const commits=(data.timeseries.commits||[]).slice(-12); destroyChart('commits');
-  charts.commits=new Chart($('#commits-chart'),{type:'line',data:{labels:commits.map(x=>x.date),datasets:[{data:commits.map(x=>x.count),borderColor:'#d9ff62',backgroundColor:'rgba(217,255,98,.065)',fill:true,tension:.4,pointRadius:2,pointBackgroundColor:'#d9ff62'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}}}});
+  charts.commits=new Chart($('#commits-chart'),{type:'line',data:{labels:commits.map(x=>x.date),datasets:[{data:commits.map(x=>x.count),borderColor:'#60f3ff',backgroundColor:'rgba(96,243,255,.055)',fill:true,tension:.42,pointRadius:2,pointBackgroundColor:'#60f3ff',pointBorderColor:'#60f3ff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}}}});
 
   const issues=(data.timeseries.issues||[]).slice(-12); destroyChart('issues');
-  charts.issues=new Chart($('#issues-chart'),{type:'bar',data:{labels:issues.map(x=>x.date),datasets:[{label:'Opened',data:issues.map(x=>x.opened),backgroundColor:'rgba(245,138,214,.74)',borderRadius:5},{label:'Closed',data:issues.map(x=>x.closed),backgroundColor:'rgba(217,255,98,.7)',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:8,font:{size:9}}}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}}}});
+  charts.issues=new Chart($('#issues-chart'),{type:'bar',data:{labels:issues.map(x=>x.date),datasets:[{label:'Opened',data:issues.map(x=>x.opened),backgroundColor:'rgba(141,124,255,.70)',borderRadius:5},{label:'Closed',data:issues.map(x=>x.closed),backgroundColor:'rgba(96,243,255,.62)',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:8,font:{size:9}}}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}}}});
 
   const top=data.stats.contributors.top||[]; destroyChart('contributors');
-  charts.contributors=new Chart($('#contributors-chart'),{type:'bar',data:{labels:top.map(x=>x.login),datasets:[{data:top.map(x=>x.contributions),backgroundColor:top.map((_,i)=>i===0?'#d9ff62':'rgba(245,138,214,.5)'),borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{size:9}}},y:{grid:{display:false},ticks:{font:{size:9}}}}}});
+  charts.contributors=new Chart($('#contributors-chart'),{type:'bar',data:{labels:top.map(x=>x.login),datasets:[{data:top.map(x=>x.contributions),backgroundColor:top.map((_,i)=>i===0?'#60f3ff':'rgba(141,124,255,.46)'),borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{size:9}}},y:{grid:{display:false},ticks:{font:{size:9}}}}}});
 
   const langs=(data.stats.languages||[]).slice(0,6); destroyChart('languages');
-  charts.languages=new Chart($('#languages-chart'),{type:'doughnut',data:{labels:langs.map(x=>x.name),datasets:[{data:langs.map(x=>x.percent),backgroundColor:['#d9ff62','#f58ad6','#ff7a72','#fff2d4','#a379bb','#9cb95e'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false}}}});
+  charts.languages=new Chart($('#languages-chart'),{type:'doughnut',data:{labels:langs.map(x=>x.name),datasets:[{data:langs.map(x=>x.percent),backgroundColor:['#60f3ff','#8d7cff','#66a6ff','#c7d1da','#7fffc6','#ff6f91'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'74%',plugins:{legend:{display:false}}}});
   $('#language-list').innerHTML=langs.map(x=>`<div class="language-row"><span>${x.name}</span><div class="lang-bar"><i style="width:${x.percent}%"></i></div><b>${x.percent}%</b></div>`).join('') || '<span class="mini-tag">No language data</span>';
 }
 
@@ -92,3 +92,20 @@ $('#compare-form').addEventListener('submit',async e=>{
     setHidden($('#compare-result'),false);
   }catch(err){showError(err.message);}finally{setHidden($('#compare-loading'),true);}
 });
+
+// Scientific particle field: deliberately lightweight so the live app stays fast.
+(function initParticleField(){
+  const canvas=$('#particle-field'); if(!canvas) return;
+  const ctx=canvas.getContext('2d'); const dpr=Math.min(window.devicePixelRatio||1,2);
+  let w=0,h=0,particles=[];
+  const resize=()=>{w=window.innerWidth;h=window.innerHeight;canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.width=`${w}px`;canvas.style.height=`${h}px`;ctx.setTransform(dpr,0,0,dpr,0,0);const count=Math.min(95,Math.max(38,Math.round(w/18)));particles=Array.from({length:count},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.25+.25,vx:(Math.random()-.5)*.08,vy:(Math.random()-.5)*.08,a:Math.random()*.45+.1}));};
+  const draw=()=>{ctx.clearRect(0,0,w,h);for(const p of particles){p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0;ctx.beginPath();ctx.fillStyle=`rgba(160,220,235,${p.a})`;ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();}requestAnimationFrame(draw);};
+  resize();window.addEventListener('resize',resize,{passive:true});draw();
+})();
+
+// Subtle 3D response on the observatory panel.
+(function initObservatoryParallax(){
+  const wrap=$('#observatory'); const frame=wrap?.querySelector('.observatory-frame'); if(!wrap||!frame) return;
+  wrap.addEventListener('pointermove',e=>{const r=wrap.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5;const y=(e.clientY-r.top)/r.height-.5;frame.style.transform=`rotateY(${(-3+x*5).toFixed(2)}deg) rotateX(${(1-y*4).toFixed(2)}deg) translateY(-2px)`;});
+  wrap.addEventListener('pointerleave',()=>{frame.style.transform='rotateY(-3deg) rotateX(1deg)';});
+})();
